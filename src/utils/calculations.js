@@ -58,7 +58,7 @@ export const generateTableData = (tempRange, leafOffset) => {
   // Humedades de 100 a 0 en pasos de 5
   const hums = Array.from({ length: 21 }, (_, i) => 100 - i * 5);
   
-  for (let t = tempRange.max; t >= tempRange.min; t--) {
+  for (let t = tempRange.max; t >= tempRange.min; t -= 0.5) {
     const row = { temp: t, values: [] };
     for (const h of hums) {
       const vpd = calculateVPD(t, h, leafOffset);

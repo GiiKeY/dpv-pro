@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData } from './utils/calculations';
-import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle } from 'lucide-react';
+import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -34,15 +34,20 @@ function App() {
     <div className="app-container">
       <header>
         <h1 className="glow-text">DPV <span className="highlight">PRO</span></h1>
-        <p className="subtitle">Herramienta de Precisión para Cultivadores de Elite</p>
+        <p className="subtitle">Herramienta de Precisión Científica para Cultivadores</p>
       </header>
+
+      {/* Publicidad Superior */}
+      <div className="ad-slot-top glass">
+        <span className="ad-placeholder">PUBLICIDAD - ESPACIO DISPONIBLE (ADSENSE)</span>
+      </div>
 
       <nav className="view-switcher glass">
         <button className={`view-btn ${view === 'calc' ? 'active' : ''}`} onClick={() => setView('calc')}>
           <LayoutGrid size={18} /> Calculadora
         </button>
         <button className={`view-btn ${view === 'table' ? 'active' : ''}`} onClick={() => setView('table')}>
-          <TableIcon size={18} /> Tabla DPV
+          <TableIcon size={18} /> Tabla Completa
         </button>
       </nav>
 
@@ -85,7 +90,7 @@ function App() {
                     <h3>Temp. Aire</h3>
                     <div className="tooltip">
                       <HelpCircle size={16} className="help-icon" />
-                      <span className="tooltip-text">La temperatura ambiental de tu sala de cultivo.</span>
+                      <span className="tooltip-text">La temperatura ambiental de tu sala de cultivo. Afecta directamente la capacidad del aire para retener humedad.</span>
                     </div>
                   </div>
                   <span className="value-badge">{temp.toFixed(1)}°C</span>
@@ -100,7 +105,7 @@ function App() {
                     <h3>Hum. Relativa</h3>
                     <div className="tooltip">
                       <HelpCircle size={16} className="help-icon" />
-                      <span className="tooltip-text">Humedad en el aire.</span>
+                      <span className="tooltip-text">Porcentaje de agua en el aire respecto al máximo posible. Humedades altas bajan el DPV y viceversa.</span>
                     </div>
                   </div>
                   <span className="value-badge">{humidity}%</span>
@@ -115,7 +120,7 @@ function App() {
                     <h3>Offset Hoja</h3>
                     <div className="tooltip">
                       <HelpCircle size={16} className="help-icon" />
-                      <span className="tooltip-text">Diferencia Temp Hoja/Aire. LED: -2°C | Sodio: +1°C.</span>
+                      <span className="tooltip-text">Diferencia entre la temp. de la hoja y el aire. Bajo luces LED suele ser -2°C o -3°C porque la planta se enfría al transpirar.</span>
                     </div>
                   </div>
                   <span className="value-badge">{leafOffset}°C</span>
@@ -127,8 +132,8 @@ function App() {
         ) : (
           <section className="table-view glass">
             <div className="table-header">
-              <h3>Tabla Interactiva DPV</h3>
-              <p>Basado en offset de hoja de {leafOffset}°C.</p>
+              <h3>Gráfico Científico de DPV</h3>
+              <p>Valores calculados con un offset de hoja de {leafOffset}°C.</p>
             </div>
             <div className="table-container">
               <table>
@@ -141,11 +146,11 @@ function App() {
                 <tbody>
                   {tableData.map((row) => (
                     <tr key={row.temp}>
-                      <td className="temp-cell sticky-col">{row.temp}°C</td>
+                      <td className="temp-cell sticky-col">{row.temp.toFixed(1)}°C</td>
                       {row.values.map((v, idx) => (
                         <td 
                           key={idx} 
-                          className={`vpd-cell ${temp === row.temp && humidity === v.humidity ? 'selected' : ''}`}
+                          className={`vpd-cell ${Math.abs(temp - row.temp) < 0.1 && Math.abs(humidity - v.humidity) < 0.1 ? 'selected' : ''}`}
                           style={{ backgroundColor: v.status.color + '22', color: v.status.color }}
                           onClick={() => handleCellClick(row.temp, v.humidity)}
                         >
@@ -160,34 +165,64 @@ function App() {
           </section>
         )}
 
-        <section className="info-section glass">
-          <h3><Info size={18} /> ¿Qué es el DPV y por qué importa?</h3>
-          <p>El Déficit de Presión de Vapor (DPV) mide cuánta agua "succiona" el aire de tus plantas. Mantenerlo en el rango ideal garantiza una fotosíntesis máxima y evita moho.</p>
-          <div className="info-grid">
-            <div className="info-item">
-              <ChevronRight size={16} className="chevron" />
-              <span><strong>Clones:</strong> 0.4 - 0.8 kPa</span>
+        <section className="education-section glass">
+          <div className="info-header">
+            <Leaf size={24} color="#00FF88" />
+            <h3>Guía Maestra: El Offset de Hoja</h3>
+          </div>
+          <div className="education-grid">
+            <div className="edu-card">
+              <h4>1. ¿Qué es el Offset?</h4>
+              <p>Es la diferencia térmica entre tus plantas y el aire. El DPV real ocurre en la hoja, no en el ambiente.</p>
             </div>
-            <div className="info-item">
-              <ChevronRight size={16} className="chevron" />
-              <span><strong>Veg:</strong> 0.8 - 1.2 kPa</span>
+            <div className="edu-card">
+              <h4>2. Configuración</h4>
+              <ul>
+                <li><strong>LED:</strong> Setea en <strong>-2.0°C</strong>.</li>
+                <li><strong>Sodio:</strong> Setea en <strong>+1.0°C</strong>.</li>
+              </ul>
             </div>
-            <div className="info-item">
-              <ChevronRight size={16} className="chevron" />
-              <span><strong>Flor:</strong> 1.2 - 1.6 kPa</span>
+            <div className="edu-card">
+              <h4>3. El Truco Pro</h4>
+              <p>Usa un láser IR: Hoja 22°C - Aire 24°C = <strong>Offset de -2°C</strong>.</p>
             </div>
           </div>
         </section>
 
-        {/* Único espacio publicitario (Integrado) */}
-        <div className="ad-box glass">
-          <div className="ad-tag">ANUNCIO</div>
-          <p>Contenido patrocinado - Espacio para AdSense</p>
+        <section className="info-section glass">
+          <div className="info-header">
+            <Target size={24} color="#00FF88" />
+            <h3>Rangos Ideales de DPV</h3>
+          </div>
+          <div className="info-grid">
+            <div className="info-item">
+              <ChevronRight size={18} className="chevron" />
+              <span><strong>0.4 - 0.8 kPa:</strong> Etapa de clones y esquejes. Humedad alta para proteger la planta.</span>
+            </div>
+            <div className="info-item">
+              <ChevronRight size={18} className="chevron" />
+              <span><strong>0.8 - 1.2 kPa:</strong> Vegetativo y Floración temprana. Máximo crecimiento fotosintético.</span>
+            </div>
+            <div className="info-item">
+              <ChevronRight size={18} className="chevron" />
+              <span><strong>1.2 - 1.6 kPa:</strong> Floración avanzada. Ayuda a prevenir hongos y mejorar la resina.</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="support-section glass">
+          <Heart size={20} color="#FF4D4D" />
+          <p>¿Te sirve esta herramienta? Apóyanos para seguir mejorando el proyecto.</p>
+          <button className="support-btn">Invítanos un café ☕</button>
+        </section>
+
+        <div className="ad-slot-bottom glass">
+          <span className="ad-placeholder">PUBLICIDAD - BANNER INFERIOR</span>
         </div>
       </main>
 
       <footer>
-        <p>DPV PRO &copy; 2026 - Herramienta Profesional de Precisión</p>
+        <p>DPV PRO &copy; 2026 - Master Precision Tools</p>
       </footer>
     </div>
   );
