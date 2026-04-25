@@ -32,8 +32,9 @@ Este documento es el registro oficial de la calidad del proyecto. Aquí seguirem
 | ID | Error Encontrado | Gravedad | Estado | Solución |
 |:---|:---|:---:|:---:|:---|
 | #001 | Discrepancia de 1.0°C vs 0.5°C en tabla | Media | ✅ Solucionado | Se actualizó la lógica de generación a pasos de 0.5. |
-| #002 | Tooltips cortados en móvil | Baja | ⏳ Pendiente | - |
+| #002 | Tooltips invisibles/cortados en móvil | Alta | ✅ Solucionado | Se implementó max-width: 70vw y soporte para :active. |
 | #003 | El botón de "Café" no tiene link real | Baja | ⏳ Pendiente | - |
+| #004 | El DPV 0.00 no indica riesgo de rocío | Media | ✅ Solucionado | Nuevo estado 'Peligro (Rocío)' implementado. |
 
 ---
 

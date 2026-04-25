@@ -42,12 +42,13 @@ export const getSmartAdvice = (currentVpd, temp, humidity, targetMin = 0.8, targ
  * Categorizes the VPD value
  */
 export const getVPDStatus = (vpd) => {
-  if (vpd < 0.4) return { label: 'Peligro (Bajo)', color: '#FF4D4D' };
+  if (vpd <= 0.1) return { label: 'Peligro (Rocío)', color: '#FF4D4D' };
+  if (vpd > 0.1 && vpd < 0.4) return { label: 'Humedad Excesiva', color: '#FFD600' };
   if (vpd >= 0.4 && vpd < 0.8) return { label: 'Esquejes/Plantines', color: '#00FF88' };
   if (vpd >= 0.8 && vpd < 1.2) return { label: 'Vegetativo', color: '#00FF88' };
   if (vpd >= 1.2 && vpd < 1.6) return { label: 'Floración', color: '#00FF88' };
   if (vpd >= 1.6 && vpd < 2.0) return { label: 'Estrés Hídrico', color: '#FFD600' };
-  return { label: 'Peligro (Alto)', color: '#FF4D4D' };
+  return { label: 'Peligro (Seco)', color: '#FF4D4D' };
 };
 
 /**
