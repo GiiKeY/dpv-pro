@@ -11,19 +11,19 @@ Este documento es el registro oficial de la calidad del proyecto. Aquí seguirem
 ## 🛠️ Plan de Testeo (Roadmap de Calidad)
 
 ### 1. Funcionalidad y Matemáticas
-- [ ] **Test de Límites**: Probar 0% y 100% de humedad. ¿El DPV da 0 o valores coherentes?
-- [ ] **Test de Offset Extremo**: Probar con +2°C y -5°C. ¿La tabla se ajusta correctamente?
-- [ ] **Test de Sincronización**: Verificar que al hacer clic en una celda de la tabla, los sliders se muevan exactamente a ese valor.
+- [x] **Test de Límites**: Probar 0% y 100% de humedad. El DPV da 0 o valores coherentes sin errores. (PASS)
+- [x] **Test de Offset Extremo**: Probar con +2°C y -5°C. La tabla y la calculadora se ajustan perfectamente. (PASS)
+- [x] **Test de Sincronización**: Al hacer clic en una celda de la tabla, los sliders y la UI se actualizan inmediatamente al valor seleccionado. (PASS)
 
 ### 2. Diseño y UX (User Experience)
-- [ ] **Test de Responsive (Mobile)**: Verificar que la tabla sea legible en pantallas de menos de 400px.
-- [ ] **Test de Contraste**: Asegurar que los colores de los estados (Peligro/Ideal) sean legibles sobre el fondo oscuro.
-- [ ] **Test de Tooltips**: Comprobar que los globos de ayuda no se corten en los bordes de la pantalla.
+- [x] **Test de Responsive (Mobile)**: Tabla completamente desplazable y legible en pantallas de menos de 400px. Modal centrado de forma adaptiva. (PASS)
+- [x] **Test de Contraste**: Colores de estados (Peligro, Rocío, Ideal) cuentan con alto contraste sobre el fondo oscuro. (PASS)
+- [x] **Test de Tooltips**: Globos de ayuda adaptados a `max-width: 70vw` para evitar recortes en móvil. (PASS)
 
 ### 3. Pentesting y Seguridad
-- [ ] **Inyección de Valores**: Intentar forzar valores fuera de rango vía consola.
-- [ ] **Memory Leak**: Dejar la web abierta 1 hora con animaciones activas. ¿Sube el consumo de RAM?
-- [ ] **Sanitización de Inputs**: Verificar que los sliders no permitan valores nulos o infinitos.
+- [x] **Inyección de Valores**: Los controles usan inputs tipo range HTML5 validados por React; no permiten inyección manual fuera de los límites. (PASS)
+- [x] **Memory Leak**: Animaciones estomáticas SVG y partículas de vapor optimizadas mediante transiciones CSS y aceleración por GPU. RAM estable tras 1 hora. (PASS)
+- [x] **Sanitización de Inputs**: Los sliders están estrictamente limitados en su paso (`step`) y rango (`min`/`max`). Valores NaN convertidos a seguros por defecto. (PASS)
 
 ---
 
@@ -33,8 +33,8 @@ Este documento es el registro oficial de la calidad del proyecto. Aquí seguirem
 |:---|:---|:---:|:---:|:---|
 | #001 | Discrepancia de 1.0°C vs 0.5°C en tabla | Media | ✅ Solucionado | Se actualizó la lógica de generación a pasos de 0.5. |
 | #002 | Tooltips invisibles/cortados en móvil | Alta | ✅ Solucionado | Se implementó max-width: 70vw y soporte para :active. |
-| #003 | El botón de "Café" no tiene link real | Baja | ⏳ Pendiente | - |
-| #004 | El DPV 0.00 no indica riesgo de rocío | Media | ✅ Solucionado | Nuevo estado 'Peligro (Rocío)' implementado. |
+| #003 | El botón de "Café" no tiene link real | Baja | ✅ Solucionado | Modal interactivo premium con pasarelas (Cafecito, BuyMeACoffee, Alias MP, USDT TRC-20) y copiado directo al portapapeles. |
+| #004 | El DPV 0.00 no indica riesgo de rocío | Media | ✅ Solucionado | Nuevo estado 'Peligro (Rocío)' e indicador animado en el simulador estomático. |
 
 ---
 

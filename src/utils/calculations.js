@@ -69,3 +69,22 @@ export const generateTableData = (tempRange, leafOffset) => {
   }
   return data;
 };
+
+/**
+ * Calculates the ideal relative humidity (%) to achieve a target VPD (kPa)
+ * given the air temperature and leaf offset.
+ */
+export const calculateIdealHumidity = (airTemp, leafOffset, targetVpd) => {
+  const leafTemp = airTemp + leafOffset;
+  const vpsatLeaf = calculateVPsat(leafTemp);
+  const vpsatAir = calculateVPsat(airTemp);
+  
+  // VPD = vpsatLeaf - vpsatAir * (RH / 100)
+  // vpsatAir * (RH / 100) = vpsatLeaf - VPD
+  // RH = 100 * (vpsatLeaf - VPD) / vpsatAir
+  const idealRH = (100 * (vpsatLeaf - targetVpd)) / vpsatAir;
+  
+  // Restringir a valores realistas entre 20% y 95%
+  return Math.min(95, Math.max(20, idealRH));
+};
+

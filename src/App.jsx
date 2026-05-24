@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData } from './utils/calculations';
-import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculateIdealHumidity } from './utils/calculations';
+import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -9,6 +9,9 @@ function App() {
   const [humidity, setHumidity] = useState(60);
   const [leafOffset, setLeafOffset] = useState(-2);
   const [stage, setStage] = useState('veg');
+  const [mode, setMode] = useState('manual'); // 'manual' o 'smart'
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [copiedText, setCopiedText] = useState('');
 
   const targets = {
     early: { min: 0.4, max: 0.8, name: 'Esquejes' },
@@ -16,9 +19,22 @@ function App() {
     flower: { min: 1.2, max: 1.6, name: 'Floración' }
   };
 
-  const vpd = useMemo(() => calculateVPD(temp, humidity, leafOffset), [temp, humidity, leafOffset]);
+  const targetVpd = useMemo(() => {
+    const currentTarget = targets[stage];
+    return (currentTarget.min + currentTarget.max) / 2;
+  }, [stage]);
+
+  const idealHumidity = useMemo(() => {
+    return Math.round(calculateIdealHumidity(temp, leafOffset, targetVpd));
+  }, [temp, leafOffset, targetVpd]);
+
+  const activeHumidity = useMemo(() => {
+    return mode === 'smart' ? idealHumidity : humidity;
+  }, [mode, idealHumidity, humidity]);
+
+  const vpd = useMemo(() => calculateVPD(temp, activeHumidity, leafOffset), [temp, activeHumidity, leafOffset]);
   const status = useMemo(() => getVPDStatus(vpd), [vpd]);
-  const advice = useMemo(() => getSmartAdvice(vpd, temp, humidity, targets[stage].min, targets[stage].max), [vpd, temp, humidity, stage]);
+  const advice = useMemo(() => getSmartAdvice(vpd, temp, activeHumidity, targets[stage].min, targets[stage].max), [vpd, temp, activeHumidity, stage]);
 
   const tableData = useMemo(() => generateTableData({ min: 15, max: 35 }, leafOffset), [leafOffset]);
   const humidities = Array.from({ length: 21 }, (_, i) => 100 - i * 5);
@@ -26,9 +42,46 @@ function App() {
   const handleCellClick = (t, h) => {
     setTemp(t);
     setHumidity(h);
+    setMode('manual');
     setView('calc');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleCopy = (text, type) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(type);
+    setTimeout(() => setCopiedText(''), 2000);
+  };
+
+  const stomaState = useMemo(() => {
+    const currentTarget = targets[stage];
+    if (vpd < currentTarget.min) {
+      return {
+        gap: 6,
+        color: '#00F0FF',
+        label: 'Saturado (Exceso H)',
+        class: 'stoma-saturated',
+        particles: Array.from({ length: 1 }, (_, i) => i)
+      };
+    } else if (vpd > currentTarget.max) {
+      return {
+        gap: 0.5,
+        color: '#FF4D4D',
+        label: 'Cerrado (Estrés)',
+        class: 'stoma-closed',
+        particles: []
+      };
+    } else {
+      return {
+        gap: 4,
+        color: '#00FF88',
+        label: 'Transpiración Ideal',
+        class: 'stoma-optimal',
+        particles: Array.from({ length: 3 }, (_, i) => i)
+      };
+    }
+  }, [vpd, stage]);
+
 
   return (
     <div className="app-container">
@@ -54,22 +107,86 @@ function App() {
       <main>
         {view === 'calc' ? (
           <>
-            <section className="stage-selector glass">
-              {Object.keys(targets).map((s) => (
-                <button key={s} className={`stage-btn ${stage === s ? 'active' : ''}`} onClick={() => setStage(s)}>
-                  {targets[s].name}
+            <section className="stage-selector-container">
+              <div className="stage-selector glass">
+                {Object.keys(targets).map((s) => (
+                  <button key={s} className={`stage-btn ${stage === s ? 'active' : ''}`} onClick={() => setStage(s)}>
+                    {targets[s].name}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="mode-selector glass">
+                <button className={`mode-btn ${mode === 'manual' ? 'active' : ''}`} onClick={() => setMode('manual')}>
+                  🎛️ Manual
                 </button>
-              ))}
+                <button className={`mode-btn ${mode === 'smart' ? 'active' : ''}`} onClick={() => setMode('smart')}>
+                  <Sparkles size={14} className="sparkle-icon" /> Smart (Auto)
+                </button>
+              </div>
             </section>
 
             <section className="main-display glass">
-              <div className="vpd-value-container">
-                <span className="vpd-label">DÉFICIT DE PRESIÓN DE VAPOR</span>
-                <div className="vpd-value glow-text" style={{ color: status.color }}>
-                  {vpd.toFixed(2)} <span className="unit">kPa</span>
+              <div className="main-display-content">
+                <div className="vpd-value-container">
+                  <span className="vpd-label">DÉFICIT DE PRESIÓN DE VAPOR</span>
+                  <div className="vpd-value glow-text" style={{ color: status.color }}>
+                    {vpd.toFixed(2)} <span className="unit">kPa</span>
+                  </div>
+                  <div className="vpd-status" style={{ backgroundColor: status.color + '33', color: status.color, border: `1px solid ${status.color}` }}>
+                    {status.label}
+                  </div>
                 </div>
-                <div className="vpd-status" style={{ backgroundColor: status.color + '33', color: status.color, border: `1px solid ${status.color}` }}>
-                  {status.label}
+
+                <div className="stoma-visualizer">
+                  <span className="visualizer-label">COMPORTAMIENTO ESTOMÁTICO</span>
+                  <div className="stoma-svg-wrapper glass">
+                    {/* Partículas animadas de transpiración */}
+                    <div className="transpiration-particles">
+                      {stomaState.particles.map(i => (
+                        <span 
+                          key={i} 
+                          className="steam-particle" 
+                          style={{ 
+                            left: `${35 + i * 15}%`, 
+                            animationDelay: `${i * 0.4}s`,
+                            backgroundColor: stomaState.color
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <svg width="100" height="60" viewBox="0 0 100 60" className={`stoma-svg ${stomaState.class}`}>
+                      {/* Fondo del poro (apertura estomática) */}
+                      <ellipse 
+                        cx="50" 
+                        cy="30" 
+                        rx={Math.max(0, stomaState.gap)} 
+                        ry="18" 
+                        fill="#050e05" 
+                        style={{ transition: 'rx 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                      />
+                      {/* Célula Oclusiva Izquierda */}
+                      <path 
+                        d="M 45,10 Q 22,30 45,50 Q 36,30 45,10" 
+                        fill={stomaState.color} 
+                        opacity="0.9"
+                        transform={`translate(${-stomaState.gap}, 0)`}
+                        style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s' }}
+                      />
+                      {/* Célula Oclusiva Derecha */}
+                      <path 
+                        d="M 55,10 Q 78,30 55,50 Q 64,30 55,10" 
+                        fill={stomaState.color} 
+                        opacity="0.9"
+                        transform={`translate(${stomaState.gap}, 0)`}
+                        style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s' }}
+                      />
+                    </svg>
+                  </div>
+                  <div className="stoma-legend" style={{ color: stomaState.color }}>
+                    <span className="legend-dot" style={{ backgroundColor: stomaState.color }} />
+                    {stomaState.label}
+                  </div>
                 </div>
               </div>
               
@@ -98,19 +215,35 @@ function App() {
                 <input type="range" min="10" max="40" step="0.5" value={temp} onChange={(e) => setTemp(parseFloat(e.target.value))} />
               </div>
 
-              <div className="control-card glass">
+              <div className={`control-card glass ${mode === 'smart' ? 'smart-locked' : ''}`}>
                 <div className="control-header">
                   <div className="title-with-help">
                     <Droplets size={20} color="#00FF88" />
                     <h3>Hum. Relativa</h3>
+                    {mode === 'smart' && <span className="smart-badge-indicator">Smart</span>}
                     <div className="tooltip">
                       <HelpCircle size={16} className="help-icon" />
-                      <span className="tooltip-text">Porcentaje de agua en el aire respecto al máximo posible. Humedades altas bajan el DPV y viceversa.</span>
+                      <span className="tooltip-text">
+                        {mode === 'smart' 
+                          ? `Regulado automáticamente al ${idealHumidity}% para la etapa ${targets[stage].name}.` 
+                          : 'Porcentaje de agua en el aire respecto al máximo posible.'}
+                      </span>
                     </div>
                   </div>
-                  <span className="value-badge">{humidity}%</span>
+                  <span className="value-badge">{activeHumidity}%</span>
                 </div>
-                <input type="range" min="0" max="100" step="1" value={humidity} onChange={(e) => setHumidity(parseFloat(e.target.value))} />
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  step="1" 
+                  value={activeHumidity} 
+                  onChange={(e) => setHumidity(parseFloat(e.target.value))}
+                  disabled={mode === 'smart'} 
+                />
+                {mode === 'smart' && (
+                  <p className="smart-lock-notice">SNAPPED: Automatizado para DPV óptimo ({targetVpd.toFixed(1)} kPa)</p>
+                )}
               </div>
 
               <div className="control-card glass">
@@ -150,7 +283,7 @@ function App() {
                       {row.values.map((v, idx) => (
                         <td 
                           key={idx} 
-                          className={`vpd-cell ${Math.abs(temp - row.temp) < 0.1 && Math.abs(humidity - v.humidity) < 0.1 ? 'selected' : ''}`}
+                          className={`vpd-cell ${Math.abs(temp - row.temp) < 0.1 && Math.abs(activeHumidity - v.humidity) < 0.1 ? 'selected' : ''}`}
                           style={{ backgroundColor: v.status.color + '22', color: v.status.color }}
                           onClick={() => handleCellClick(row.temp, v.humidity)}
                         >
@@ -211,9 +344,9 @@ function App() {
         </section>
 
         <section className="support-section glass">
-          <Heart size={20} color="#FF4D4D" />
+          <Heart size={20} color="#FF4D4D" className="heart-beat" />
           <p>¿Te sirve esta herramienta? Apóyanos para seguir mejorando el proyecto.</p>
-          <button className="support-btn">Invítanos un café ☕</button>
+          <button className="support-btn" onClick={() => setIsSupportModalOpen(true)}>Invítanos un café ☕</button>
         </section>
 
         <div className="ad-slot-bottom glass">
@@ -224,6 +357,79 @@ function App() {
       <footer>
         <p>DPV PRO &copy; 2026 - Master Precision Tools</p>
       </footer>
+
+      {/* Modal de Soporte Glassmorphic */}
+      {isSupportModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsSupportModalOpen(false)}>
+          <div className="modal-content glass glow-border" onClick={(e) => e.stopPropagation()}>
+            <button className="close-modal-btn" onClick={() => setIsSupportModalOpen(false)}>
+              <X size={20} />
+            </button>
+            
+            <div className="modal-header">
+              <Coffee size={36} color="#00FF88" className="icon-pulse" />
+              <h2 className="glow-text">Apoya a DPV PRO</h2>
+              <p>Tu contribución nos ayuda a mantener los servidores activos y seguir desarrollando herramientas de precisión científica para cultivadores.</p>
+            </div>
+
+            <div className="payment-options">
+              {/* Cafecito AR */}
+              <a href="https://cafecito.app/gikey" target="_blank" rel="noopener noreferrer" className="payment-card glass">
+                <div className="payment-card-header">
+                  <h4>Cafecito.app</h4>
+                  <span className="payment-badge ar">Argentina 🇦🇷</span>
+                </div>
+                <p>Apóyanos con pesos argentinos de forma rápida.</p>
+                <span className="payment-action-btn">Invitar Café ☕</span>
+              </a>
+
+              {/* BuyMeACoffee Global */}
+              <a href="https://buymeacoffee.com/gikey" target="_blank" rel="noopener noreferrer" className="payment-card glass">
+                <div className="payment-card-header">
+                  <h4>Buy Me A Coffee</h4>
+                  <span className="payment-badge global">Global 🌎</span>
+                </div>
+                <p>Support us with credit/debit card from anywhere.</p>
+                <span className="payment-action-btn">Support ☕</span>
+              </a>
+
+              {/* Transferencia Alias */}
+              <div className="payment-card glass" onClick={() => handleCopy('gikey.mp', 'alias')}>
+                <div className="payment-card-header">
+                  <h4>Alias Bancario</h4>
+                  <span className="payment-badge ar">MercadoPago 🇦🇷</span>
+                </div>
+                <div className="copy-field">
+                  <code>gikey.mp</code>
+                  <button className="copy-btn">
+                    {copiedText === 'alias' ? <Check size={16} color="#00FF88" /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <p className="copy-instruction">Haz clic para copiar el alias de Mercado Pago.</p>
+              </div>
+
+              {/* USDT Cripto */}
+              <div className="payment-card glass" onClick={() => handleCopy('TXj3vJd1f8N9SgK5kRqp4L8vWjQ8xYt7mD', 'usdt')}>
+                <div className="payment-card-header">
+                  <h4>USDT (TRC-20)</h4>
+                  <span className="payment-badge crypto">Cripto 🪙</span>
+                </div>
+                <div className="copy-field">
+                  <code className="crypto-address">TXj3vJd1f8N9...</code>
+                  <button className="copy-btn">
+                    {copiedText === 'usdt' ? <Check size={16} color="#00FF88" /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <p className="copy-instruction">Haz clic para copiar la dirección TRC-20.</p>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <p>¡Muchísimas gracias por apoyar el software independiente de alta calidad! 💚</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
