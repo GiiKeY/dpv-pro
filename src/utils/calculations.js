@@ -88,3 +88,38 @@ export const calculateIdealHumidity = (airTemp, leafOffset, targetVpd) => {
   return Math.min(95, Math.max(20, idealRH));
 };
 
+/**
+ * Calculates the Dew Point temperature (°C) using the Magnus-Tetens formula.
+ */
+export const calculateDewPoint = (temp, humidity) => {
+  const a = 17.27;
+  const b = 237.7;
+  const alpha = ((a * temp) / (b + temp)) + Math.log(humidity / 100);
+  return (b * alpha) / (a - alpha);
+};
+
+/**
+ * Predicts the night relative humidity (%) after lights off.
+ * Assumes absolute moisture remains relatively constant.
+ */
+export const predictNightRH = (dayTemp, dayRH, tempDrop) => {
+  const nightTemp = dayTemp - tempDrop;
+  const vpsatDay = calculateVPsat(dayTemp);
+  const vpDay = vpsatDay * (dayRH / 100);
+  const vpsatNight = calculateVPsat(nightTemp);
+  
+  // RH_night = 100 * vpDay / vpsatNight
+  const predictedRH = (vpDay / vpsatNight) * 100;
+  return Math.min(100, Math.max(0, predictedRH));
+};
+
+/**
+ * Estimates daily transpirative water demand in liters based on DPV, plants count, and pot size.
+ */
+export const calculateEvapotranspiration = (plantsCount, potSize, vpd) => {
+  // Una planta madura evapotranspira aprox 0.08L de agua por litro de maceta por 1.0 kPa de demanda (VPD).
+  const liters = plantsCount * potSize * 0.08 * vpd;
+  return Math.max(0, liters);
+};
+
+

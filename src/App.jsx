@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculateIdealHumidity } from './utils/calculations';
-import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles } from 'lucide-react';
+import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculateIdealHumidity, calculateDewPoint, predictNightRH, calculateEvapotranspiration } from './utils/calculations';
+import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -13,11 +13,50 @@ function App() {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [copiedText, setCopiedText] = useState('');
 
-  const targets = {
-    early: { min: 0.4, max: 0.8, name: 'Esquejes' },
-    veg: { min: 0.8, max: 1.2, name: 'Vegetativo' },
-    flower: { min: 1.2, max: 1.6, name: 'Floración' }
-  };
+  // Estados para Herramientas Pro (v0.6)
+  const [genetics, setGenetics] = useState('hybrid'); // 'hybrid', 'indica', 'sativa'
+  const [activeProTool, setActiveProTool] = useState('nocturno');
+  
+  // Módulo 1: Nocturno
+  const [nightTempDrop, setNightTempDrop] = useState(5);
+  
+  // Módulo 3: Riego/Evaporación
+  const [plantsCount, setPlantsCount] = useState(4);
+  const [potSize, setPotSize] = useState(10);
+  
+  // Módulo 4: Costo Eléctrico
+  const [kwhCost, setKwhCost] = useState(0.15);
+  const [deviceWatts, setDeviceWatts] = useState(250);
+  const [deviceHours, setDeviceHours] = useState(12);
+  
+  // Módulo 5: Academia DPV
+  const [quizAnswers, setQuizAnswers] = useState({ q1: '', q2: '', q3: '' });
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+
+  const targets = useMemo(() => {
+    const baseTargets = {
+      early: { min: 0.4, max: 0.8, name: 'Esquejes' },
+      veg: { min: 0.8, max: 1.2, name: 'Vegetativo' },
+      flower: { min: 1.2, max: 1.6, name: 'Floración' }
+    };
+    
+    if (genetics === 'indica') {
+      return {
+        early: { min: 0.5, max: 0.9, name: 'Esquejes (Índica)' },
+        veg: { min: 0.9, max: 1.3, name: 'Vegetativo (Índica)' },
+        flower: { min: 1.3, max: 1.7, name: 'Floración (Índica)' }
+      };
+    } else if (genetics === 'sativa') {
+      return {
+        early: { min: 0.3, max: 0.7, name: 'Esquejes (Sativa)' },
+        veg: { min: 0.7, max: 1.1, name: 'Vegetativo (Sativa)' },
+        flower: { min: 1.1, max: 1.5, name: 'Floración (Sativa)' }
+      };
+    }
+    return baseTargets;
+  }, [genetics]);
+
 
   const targetVpd = useMemo(() => {
     const currentTarget = targets[stage];
@@ -102,10 +141,13 @@ function App() {
         <button className={`view-btn ${view === 'table' ? 'active' : ''}`} onClick={() => setView('table')}>
           <TableIcon size={18} /> Tabla Completa
         </button>
+        <button className={`view-btn ${view === 'pro' ? 'active' : ''}`} onClick={() => setView('pro')}>
+          <Zap size={18} /> Herramientas Pro
+        </button>
       </nav>
 
       <main>
-        {view === 'calc' ? (
+        {view === 'calc' && (
           <>
             <section className="stage-selector-container">
               <div className="stage-selector glass">
@@ -262,7 +304,9 @@ function App() {
               </div>
             </section>
           </>
-        ) : (
+        )}
+
+        {view === 'table' && (
           <section className="table-view glass">
             <div className="table-header">
               <h3>Gráfico Científico de DPV</h3>
@@ -294,6 +338,431 @@ function App() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </section>
+        )}
+
+        {view === 'pro' && (
+          <section className="pro-tools-view glass">
+            <div className="pro-layout">
+              {/* Menú lateral Pro */}
+              <aside className="pro-sidebar">
+                <h3>Módulos Avanzados</h3>
+                <nav className="pro-nav">
+                  <button className={`pro-nav-btn ${activeProTool === 'nocturno' ? 'active' : ''}`} onClick={() => setActiveProTool('nocturno')}>
+                    🌙 Predictor Nocturno
+                  </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'genetica' ? 'active' : ''}`} onClick={() => setActiveProTool('genetica')}>
+                    🧬 Fisiología Genética
+                  </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'riego' ? 'active' : ''}`} onClick={() => setActiveProTool('riego')}>
+                    💧 Demanda de Riego
+                  </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'costo' ? 'active' : ''}`} onClick={() => setActiveProTool('costo')}>
+                    ⚡ Consumo Eléctrico
+                  </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'academia' ? 'active' : ''}`} onClick={() => setActiveProTool('academia')}>
+                    🎓 Academia DPV
+                  </button>
+                </nav>
+              </aside>
+
+              {/* Panel de Visualización del Módulo Activo */}
+              <div className="pro-panel">
+                {activeProTool === 'nocturno' && (
+                  <div className="pro-module-card">
+                    <div className="module-header">
+                      <Thermometer size={24} color="#FFD600" />
+                      <h3>Módulo 1: Simulador de Transición Nocturna ("Lights-Off" Crash Test)</h3>
+                    </div>
+                    <p className="module-desc">Predice la Humedad Relativa y evalúa el riesgo de condensación de agua sobre las hojas y flores al apagar las luces en tu sala de cultivo.</p>
+                    
+                    <div className="module-form-grid">
+                      <div className="form-group">
+                        <label>Temperatura Diurna de tu Sala: <strong>{temp.toFixed(1)}°C</strong></label>
+                        <p className="field-desc">Tomado de la calculadora principal.</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Humedad Diurna de tu Sala: <strong>{activeHumidity}%</strong></label>
+                        <p className="field-desc">Tomado de la calculadora principal.</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Caída de Temperatura Esperada al apagar focos (°C): <strong>{nightTempDrop}°C</strong></label>
+                        <input 
+                          type="range" 
+                          min="1" 
+                          max="12" 
+                          step="0.5" 
+                          value={nightTempDrop} 
+                          onChange={(e) => setNightTempDrop(parseFloat(e.target.value))} 
+                        />
+                        <span className="slider-limits">Mín: 1°C | Máx: 12°C</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const tNight = temp - nightTempDrop;
+                      const predictedRH = Math.round(predictNightRH(temp, activeHumidity, nightTempDrop));
+                      const leafTempNight = tNight - 0.5; // Offset nocturno menor ya que transpiran poco
+                      const dpNight = calculateDewPoint(tNight, predictedRH);
+                      const difference = leafTempNight - dpNight;
+                      
+                      let nightRisk = { label: 'SEGURO', color: '#00FF88', desc: 'No hay riesgo de rocío ni picos críticos de humedad. Las hojas permanecerán secas.' };
+                      if (predictedRH >= 85 || difference <= 1.0) {
+                        nightRisk = { label: 'RIESGO DE HONGOS', color: '#FFD600', desc: 'La humedad nocturna será del ' + predictedRH + '%. Riesgo alto de propagación de Oídio.' };
+                      }
+                      if (predictedRH >= 98 || difference <= 0.1) {
+                        nightRisk = { 
+                          label: 'PELIGRO DE CONDENSACIÓN', 
+                          color: '#FF4D4D', 
+                          desc: 'El aire se saturará. Se formará agua líquida dentro de tus flores al apagar las luces, generando Botrytis.' 
+                        };
+                      }
+
+                      return (
+                        <div className="module-results glow-border">
+                          <h4>Resultados del Análisis Nocturno Proyectado:</h4>
+                          <div className="metrics-grid">
+                            <div className="metric-box">
+                              <span className="metric-label">Temp. Nocturna</span>
+                              <span className="metric-val">{tNight.toFixed(1)}°C</span>
+                            </div>
+                            <div className="metric-box">
+                              <span className="metric-label">Humedad Nocturna</span>
+                              <span className="metric-val" style={{ color: nightRisk.color }}>{predictedRH}%</span>
+                            </div>
+                            <div className="metric-box">
+                              <span className="metric-label">Temp. Punto Rocío</span>
+                              <span className="metric-val">{dpNight.toFixed(1)}°C</span>
+                            </div>
+                          </div>
+
+                          <div className="night-alarm-card" style={{ backgroundColor: nightRisk.color + '15', border: `1px solid ${nightRisk.color}` }}>
+                            <div className="alarm-header" style={{ color: nightRisk.color }}>
+                              <AlertTriangle size={20} className={nightRisk.label !== 'SEGURO' ? 'icon-pulse' : ''} />
+                              <strong>ESTADO: {nightRisk.label}</strong>
+                            </div>
+                            <p>{nightRisk.desc}</p>
+                            {nightRisk.label !== 'SEGURO' && (
+                              <div className="pro-advice-tip">
+                                💡 <strong>Sugerencia Técnica:</strong> Programa tu extractor para que funcione al 100% durante los 30 minutos antes y después del apagado de luces para evacuar el aire cargado de humedad, o instala un deshumidificador programado de noche.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {activeProTool === 'genetica' && (
+                  <div className="pro-module-card">
+                    <div className="module-header">
+                      <Target size={24} color="#00FF88" />
+                      <h3>Módulo 2: Configuración Específica por Genética Fisiológica</h3>
+                    </div>
+                    <p className="module-desc">Selecciona la predominancia genética de tus plantas para ajustar con precisión científica los rangos ideales de DPV óptimos en base a su origen evolutivo.</p>
+                    
+                    <div className="genetics-grid-selector">
+                      <button className={`genetic-card ${genetics === 'hybrid' ? 'active' : ''}`} onClick={() => setGenetics('hybrid')}>
+                        <h4>Híbrida / Automática</h4>
+                        <span className="genetic-badge">Estándar</span>
+                        <p>Genéticas equilibradas. Rangos clásicos óptimos (Clones: 0.6 | Veg: 1.0 | Floración: 1.4 kPa).</p>
+                      </button>
+
+                      <button className={`genetic-card indica-border ${genetics === 'indica' ? 'active' : ''}`} onClick={() => setGenetics('indica')}>
+                        <h4>100% Índica</h4>
+                        <span className="genetic-badge ind">Seco / Montaña</span>
+                        <p>Originarias de regiones secas y montañosas. Toleran DPVs más altos y prefieren aire ligeramente más seco en floración avanzada.</p>
+                      </button>
+
+                      <button className={`genetic-card sativa-border ${genetics === 'sativa' ? 'active' : ''}`} onClick={() => setGenetics('sativa')}>
+                        <h4>100% Sativa</h4>
+                        <span className="genetic-badge sat">Tropical / Húmedo</span>
+                        <p>Evolucionaron en climas tropicales muy húmedos. Toleran humedades relativas más altas y prefieren DPVs más suaves.</p>
+                      </button>
+                    </div>
+
+                    <div className="genetics-applied-targets glow-border">
+                      <h4>Rangos de DPV Optimizados para Genética <span className="highlight" style={{ textTransform: 'uppercase' }}>{genetics}</span>:</h4>
+                      <p className="applied-label-notice">✅ Aplicados dinámicamente en tu calculadora principal y tabla de datos completa.</p>
+                      
+                      <div className="applied-ranges-display">
+                        <div className="range-display-box">
+                          <span className="stage-name">Esquejes / Clones</span>
+                          <span className="range-val">{targets.early.min.toFixed(1)} - {targets.early.max.toFixed(1)} kPa</span>
+                        </div>
+                        <div className="range-display-box">
+                          <span className="stage-name">Vegetativo</span>
+                          <span className="range-val">{targets.veg.min.toFixed(1)} - {targets.veg.max.toFixed(1)} kPa</span>
+                        </div>
+                        <div className="range-display-box">
+                          <span className="stage-name">Floración</span>
+                          <span className="range-val">{targets.flower.min.toFixed(1)} - {targets.flower.max.toFixed(1)} kPa</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeProTool === 'riego' && (
+                  <div className="pro-module-card">
+                    <div className="module-header">
+                      <Droplets size={24} color="#00F0FF" />
+                      <h3>Módulo 3: Calculadora de Evapotranspiración en Litros (Riego)</h3>
+                    </div>
+                    <p className="module-desc">Estima cuántos litros de agua transpiran tus plantas por día según el DPV y volumen total del sustrato. Te ayuda a calcular intervalos de riego científicos.</p>
+                    
+                    <div className="module-form-grid">
+                      <div className="form-group">
+                        <label>Cantidad de Plantas en la Sala: <strong>{plantsCount}</strong></label>
+                        <input 
+                          type="range" 
+                          min="1" 
+                          max="40" 
+                          step="1" 
+                          value={plantsCount} 
+                          onChange={(e) => setPlantsCount(parseInt(e.target.value))} 
+                        />
+                        <span className="slider-limits">Mín: 1 | Máx: 40</span>
+                      </div>
+                      <div className="form-group">
+                        <label>Tamaño Promedio de las Macetas (Litros): <strong>{potSize} L</strong></label>
+                        <input 
+                          type="range" 
+                          min="1" 
+                          max="50" 
+                          step="1" 
+                          value={potSize} 
+                          onChange={(e) => setPotSize(parseInt(e.target.value))} 
+                        />
+                        <span className="slider-limits">Mín: 1L | Máx: 50L</span>
+                      </div>
+                      <div className="form-group">
+                        <label>DPV de Referencia: <strong>{vpd.toFixed(2)} kPa</strong></label>
+                        <p className="field-desc">Tomado de la calculadora principal en tiempo real.</p>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const totalLiters = calculateEvapotranspiration(plantsCount, potSize, vpd);
+                      const litersPerPlant = totalLiters / plantsCount;
+
+                      return (
+                        <div className="module-results glow-border">
+                          <h4>Consumo de Agua Diario Estimado de tu Cultivo:</h4>
+                          <div className="metrics-grid">
+                            <div className="metric-box water-bg">
+                              <span className="metric-label">Total Sala</span>
+                              <span className="metric-val">{totalLiters.toFixed(2)} L/Día</span>
+                            </div>
+                            <div className="metric-box water-bg">
+                              <span className="metric-label">Por Planta</span>
+                              <span className="metric-val">{litersPerPlant.toFixed(2)} L/Día</span>
+                            </div>
+                            <div className="metric-box">
+                              <span className="metric-label">Demanda Transpirativa</span>
+                              <span className="metric-val" style={{ color: vpd > 1.2 ? '#FF4D4D' : vpd < 0.6 ? '#00DFFF' : '#00FF88' }}>
+                                {vpd > 1.2 ? 'Alta (Seco)' : vpd < 0.6 ? 'Baja (Muy Húmedo)' : 'Óptima'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="pro-advice-tip water-tip-border">
+                            📢 <strong>Guía de Riego Basada en DPV:</strong><br />
+                            {vpd < 0.6 && "⚠️ DPV MUY BAJO: Tus plantas transpiran muy lento. El sustrato se secará despacio. Riega con volúmenes moderados y espacia más los riegos para evitar asfixia radicular y hongos en las raíces."}
+                            {vpd >= 0.6 && vpd <= 1.2 && "🟢 DPV ÓPTIMO: Las plantas transpiran de forma fluida y sana. Los riegos pueden seguir el patrón estándar, ya que el ciclo húmedo/seco del sustrato se completa de forma natural y óptima."}
+                            {vpd > 1.2 && "⚠️ DPV ALTO: Alta demanda hídrica. Las plantas pierden agua rápidamente para no quemarse. Necesitarás regar con mayor frecuencia o aumentar el volumen de riego diario para evitar marchitamiento por estrés hídrico."}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {activeProTool === 'costo' && (
+                  <div className="pro-module-card">
+                    <div className="module-header">
+                      <Coffee size={24} color="#00FF88" />
+                      <h3>Módulo 4: Estimador de Costo Energético de Climatización</h3>
+                    </div>
+                    <p className="module-desc">Calcula el consumo eléctrico y el costo monetario mensual estimado de tus equipos de climatización (extractores, calefactores o deshumidificadores) utilizados para corregir el DPV.</p>
+                    
+                    <div className="module-form-grid">
+                      <div className="form-group">
+                        <label>Costo del kWh (en tu moneda local): <strong>${kwhCost.toFixed(2)}</strong></label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0"
+                          value={kwhCost} 
+                          onChange={(e) => setKwhCost(parseFloat(e.target.value) || 0)} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Potencia Eléctrica del Equipo (en Watts): <strong>{deviceWatts} W</strong></label>
+                        <input 
+                          type="range" 
+                          min="10" 
+                          max="2000" 
+                          step="10" 
+                          value={deviceWatts} 
+                          onChange={(e) => setDeviceWatts(parseInt(e.target.value))} 
+                        />
+                        <span className="slider-limits">Clones/LED: 20W | Deshum/Sodio: 1000W+</span>
+                      </div>
+                      <div className="form-group">
+                        <label>Horas de Funcionamiento Diario: <strong>{deviceHours} hs</strong></label>
+                        <input 
+                          type="range" 
+                          min="1" 
+                          max="24" 
+                          step="1" 
+                          value={deviceHours} 
+                          onChange={(e) => setDeviceHours(parseInt(e.target.value))} 
+                        />
+                        <span className="slider-limits">Mín: 1h | Máx: 24h</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const dailyKwh = (deviceWatts * deviceHours) / 1000;
+                      const dailyCost = dailyKwh * kwhCost;
+                      const monthlyCost = dailyCost * 30;
+                      const co2Footprint = dailyKwh * 0.4 * 30; // 0.4kg CO2 por kWh promedio
+
+                      return (
+                        <div className="module-results glow-border">
+                          <h4>Consumo y Costo Proyectado del Equipo:</h4>
+                          <div className="metrics-grid">
+                            <div className="metric-box cost-bg">
+                              <span className="metric-label">Costo Mensual</span>
+                              <span className="metric-val">${monthlyCost.toFixed(2)}</span>
+                            </div>
+                            <div className="metric-box cost-bg">
+                              <span className="metric-label">Consumo Diario</span>
+                              <span className="metric-val">{dailyKwh.toFixed(2)} kWh</span>
+                            </div>
+                            <div className="metric-box">
+                              <span className="metric-label">Huella CO2</span>
+                              <span className="metric-val">{co2Footprint.toFixed(1)} kg/Mes</span>
+                            </div>
+                          </div>
+
+                          <div className="pro-advice-tip cost-tip-border">
+                            💡 <strong>Consejo de Eficiencia Energética:</strong><br />
+                            Ajustar el DPV usando **Modo Smart (Auto)** te permite apagar o reducir la potencia de tus extractores y humidificadores en los momentos óptimos, reduciendo tu consumo eléctrico mensual entre un 15% y un 30%.
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {activeProTool === 'academia' && (
+                  <div className="pro-module-card">
+                    <div className="module-header">
+                      <Sparkles size={24} color="#FFD600" />
+                      <h3>Módulo 5: Academia DPV (Trivia Científica de Precisión)</h3>
+                    </div>
+                    <p className="module-desc">Ponte a prueba, Maestro de las Sombras. Responde correctamente estas tres preguntas científicas de precisión para demostrar tus conocimientos y desbloquear tu medalla virtual.</p>
+
+                    <div className="quiz-container">
+                      {/* Pregunta 1 */}
+                      <div className="quiz-question-box">
+                        <h5>1. ¿Dónde ocurre de manera fisiológica el DPV real de tu cultivo?</h5>
+                        <div className="quiz-options">
+                          <button className={`quiz-opt-btn ${quizAnswers.q1 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q1: 'A' })}>
+                            A. En el sensor de humedad que cuelga de la pared.
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q1 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q1: 'B' })}>
+                            B. En la superficie de la hoja, regulado por los estomas. (Correcto)
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q1 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q1: 'C' })}>
+                            C. Directamente en los focos LED de la sala.
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pregunta 2 */}
+                      <div className="quiz-question-box">
+                        <h5>2. ¿Qué acción realizan los estomas de las hojas ante un DPV críticamente alto (ej: 2.2 kPa)?</h5>
+                        <div className="quiz-options">
+                          <button className={`quiz-opt-btn ${quizAnswers.q2 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q2: 'A' })}>
+                            A. Se abren de par en par para liberar la máxima cantidad de agua posible.
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q2 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q2: 'B' })}>
+                            B. Explotan debido a la presión interna acumulada del agua.
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q2 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q2: 'C' })}>
+                            C. Se cierran herméticamente para evitar que la planta muera deshidratada. (Correcto)
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pregunta 3 */}
+                      <div className="quiz-question-box">
+                        <h5>3. ¿Por qué la transición de luces encendidas a apagadas (Lights-Off) es el momento de mayor riesgo de moho?</h5>
+                        <div className="quiz-options">
+                          <button className={`quiz-opt-btn ${quizAnswers.q3 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q3: 'A' })}>
+                            A. Porque la temperatura de la hoja cae por debajo del punto de rocío y condensa agua. (Correcto)
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q3 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q3: 'B' })}>
+                            B. Porque las plantas necesitan oscuridad absoluta para transpirar a su máximo nivel.
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q3 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q3: 'C' })}>
+                            C. Porque el DPV del aire se vuelve infinito al apagarse las luces.
+                          </button>
+                        </div>
+                      </div>
+
+                      {!quizSubmitted ? (
+                        <button 
+                          className="quiz-submit-btn" 
+                          onClick={() => {
+                            if (!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3) return;
+                            let score = 0;
+                            if (quizAnswers.q1 === 'B') score++;
+                            if (quizAnswers.q2 === 'C') score++;
+                            if (quizAnswers.q3 === 'A') score++;
+                            setQuizScore(score);
+                            setQuizSubmitted(true);
+                          }}
+                          disabled={!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3}
+                        >
+                          Enviar Respuestas e Inspeccionar Resultados
+                        </button>
+                      ) : (
+                        <div className="quiz-submitted-box glow-border">
+                          {quizScore === 3 ? (
+                            <div className="quiz-success">
+                              <span className="medal-emoji">🏆</span>
+                              <h4>¡FELICIDADES MAESTRO DEL DPV!</h4>
+                              <p>Has respondido las 3 preguntas correctamente de manera perfecta. Tu nivel de comprensión fisiológica vegetal es de élite.</p>
+                              <div className="virtual-badge-card">
+                                <strong>🥇 MEDALLA: MAESTRO SHADOW DEL DPV</strong>
+                                <span>DPV PRO ACADEMY &copy; 2026</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="quiz-fail">
+                              <h4>Resultado: {quizScore}/3 correctas</h4>
+                              <p>Tienes potencial de cultivador experto, pero aún quedan algunos conceptos por afinar para no arriesgar tus flores.</p>
+                              <button className="quiz-reset-btn" onClick={() => {
+                                setQuizAnswers({ q1: '', q2: '', q3: '' });
+                                setQuizSubmitted(false);
+                                setQuizScore(0);
+                              }}>
+                                Intentar Nuevamente la Trivia
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         )}
