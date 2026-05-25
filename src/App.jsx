@@ -408,19 +408,34 @@ function App() {
                 <p className="copy-instruction">Haz clic para copiar el alias de Mercado Pago.</p>
               </div>
 
-              {/* USDT Cripto */}
-              <div className="payment-card glass" onClick={() => handleCopy('TXj3vJd1f8N9SgK5kRqp4L8vWjQ8xYt7mD', 'usdt')}>
+              {/* Binance Smart Chain BEP-20 */}
+              <div className="payment-card glass" onClick={() => handleCopy('0x33bE63D963d95318e2657A401Df1F0aC6Ef6a410', 'bep20')}>
                 <div className="payment-card-header">
-                  <h4>USDT (TRC-20)</h4>
-                  <span className="payment-badge crypto">Cripto 🪙</span>
+                  <h4>USDT (BEP-20)</h4>
+                  <span className="payment-badge crypto">BSC 🪙</span>
                 </div>
                 <div className="copy-field">
-                  <code className="crypto-address">TXj3vJd1f8N9...</code>
+                  <code className="crypto-address">0x33bE63D9...</code>
                   <button className="copy-btn">
-                    {copiedText === 'usdt' ? <Check size={16} color="#00FF88" /> : <Copy size={16} />}
+                    {copiedText === 'bep20' ? <Check size={16} color="#00FF88" /> : <Copy size={16} />}
                   </button>
                 </div>
-                <p className="copy-instruction">Haz clic para copiar la dirección TRC-20.</p>
+                <p className="copy-instruction">Haz clic para copiar la dirección BEP-20.</p>
+              </div>
+
+              {/* Solana Network */}
+              <div className="payment-card glass" onClick={() => handleCopy('3YS3F9DWvzrKv6PpgAL26wwpiZYoWRtWmWwBGBXG9Jbo', 'solana')}>
+                <div className="payment-card-header">
+                  <h4>Cripto (Solana)</h4>
+                  <span className="payment-badge crypto">SOL 🪙</span>
+                </div>
+                <div className="copy-field">
+                  <code className="crypto-address">3YS3F9DW...</code>
+                  <button className="copy-btn">
+                    {copiedText === 'solana' ? <Check size={16} color="#00FF88" /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <p className="copy-instruction">Haz clic para copiar la dirección de Solana.</p>
               </div>
             </div>
 
