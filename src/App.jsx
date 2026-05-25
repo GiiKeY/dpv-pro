@@ -3,6 +3,16 @@ import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculat
 import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award } from 'lucide-react';
 import './App.css';
 
+const LEGENDARY_STRAINS = [
+  { id: 'hybrid_standard', name: 'Híbrida Estándar 🧬', type: 'hybrid', desc: 'Genéticas balanceadas de cultivo moderno indoor.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.2, 1.6] },
+  { id: 'afghan_kush', name: 'Afghan Kush 🏔️', type: 'indica', desc: '100% Índica pura originaria de las montañas del Hindu Kush. Alta resistencia a DPV secos en floración avanzada.', early: [0.5, 0.9], veg: [0.9, 1.3], flower: [1.3, 1.7] },
+  { id: 'northern_lights', name: 'Northern Lights 🌌', type: 'indica', desc: 'Índica dominante clásica. Resistente, prefiere aire seco en floración tardía para resguardo sanitario.', early: [0.5, 0.9], veg: [0.9, 1.3], flower: [1.3, 1.7] },
+  { id: 'super_silver_haze', name: 'Super Silver Haze 🌫️', type: 'sativa', desc: 'Sativa tropical legendaria. Transpiración masiva constante, muy sensible al cierre estomático en aire seco.', early: [0.3, 0.7], veg: [0.7, 1.1], flower: [1.1, 1.5] },
+  { id: 'acapulco_gold', name: 'Acapulco Gold ☀️', type: 'sativa', desc: 'Sativa clásica adaptada evolutivamente a climas costeros calurosos e hiper-húmedos de México.', early: [0.3, 0.7], veg: [0.7, 1.1], flower: [1.1, 1.5] },
+  { id: 'gorilla_glue', name: 'Gorilla Glue #4 🦍', type: 'hybrid', desc: 'Híbrida 50/50 equilibrada de alta potencia. Transpiración constante y resinado masivo estándar.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.2, 1.6] },
+  { id: 'sour_diesel', name: 'Sour Diesel ⛽', type: 'sativa', desc: 'Predominancia Sativa vigorosa. Requiere DPVs suaves y alta humedad para estirar sus ramas sin estrés.', early: [0.35, 0.75], veg: [0.75, 1.15], flower: [1.15, 1.55] }
+];
+
 function App() {
   const [view, setView] = useState('calc'); 
   const [temp, setTemp] = useState(24);
@@ -14,7 +24,7 @@ function App() {
   const [copiedText, setCopiedText] = useState('');
 
   // Estados para Herramientas Pro (v0.6)
-  const [genetics, setGenetics] = useState('hybrid'); // 'hybrid', 'indica', 'sativa'
+  const [activeStrain, setActiveStrain] = useState('hybrid_standard');
   const [activeProTool, setActiveProTool] = useState('nocturno');
   
   // Módulo 1: Nocturno
@@ -65,29 +75,19 @@ function App() {
     }
   });
 
-  const targets = useMemo(() => {
-    const baseTargets = {
-      early: { min: 0.4, max: 0.8, name: 'Esquejes' },
-      veg: { min: 0.8, max: 1.2, name: 'Vegetativo' },
-      flower: { min: 1.2, max: 1.6, name: 'Floración' }
-    };
-    
-    if (genetics === 'indica') {
-      return {
-        early: { min: 0.5, max: 0.9, name: 'Esquejes (Índica)' },
-        veg: { min: 0.9, max: 1.3, name: 'Vegetativo (Índica)' },
-        flower: { min: 1.3, max: 1.7, name: 'Floración (Índica)' }
-      };
-    } else if (genetics === 'sativa') {
-      return {
-        early: { min: 0.3, max: 0.7, name: 'Esquejes (Sativa)' },
-        veg: { min: 0.7, max: 1.1, name: 'Vegetativo (Sativa)' },
-        flower: { min: 1.1, max: 1.5, name: 'Floración (Sativa)' }
-      };
-    }
-    return baseTargets;
-  }, [genetics]);
+  const selectedStrain = useMemo(() => {
+    return LEGENDARY_STRAINS.find(s => s.id === activeStrain) || LEGENDARY_STRAINS[0];
+  }, [activeStrain]);
 
+  const genetics = selectedStrain.type;
+
+  const targets = useMemo(() => {
+    return {
+      early: { min: selectedStrain.early[0], max: selectedStrain.early[1], name: `Clones (${selectedStrain.name})` },
+      veg: { min: selectedStrain.veg[0], max: selectedStrain.veg[1], name: `Vegetativo (${selectedStrain.name})` },
+      flower: { min: selectedStrain.flower[0], max: selectedStrain.flower[1], name: `Floración (${selectedStrain.name})` }
+    };
+  }, [selectedStrain]);
 
   const targetVpd = useMemo(() => {
     const currentTarget = targets[stage];
@@ -123,6 +123,28 @@ function App() {
     setTimeout(() => setCopiedText(''), 2000);
   };
 
+  const stomaPaths = useMemo(() => {
+    if (genetics === 'sativa') {
+      return {
+        left: "M 47,10 Q 34,30 47,50 Q 42,30 47,10",
+        right: "M 53,10 Q 66,30 53,50 Q 58,30 53,10",
+        ry: 18
+      };
+    } else if (genetics === 'indica') {
+      return {
+        left: "M 42,10 Q 15,30 42,50 Q 30,30 42,10",
+        right: "M 58,10 Q 85,30 58,50 Q 70,30 58,10",
+        ry: 18
+      };
+    }
+    // Híbrida
+    return {
+      left: "M 45,10 Q 22,30 45,50 Q 36,30 45,10",
+      right: "M 55,10 Q 78,30 55,50 Q 64,30 55,10",
+      ry: 18
+    };
+  }, [genetics]);
+
   const stomaState = useMemo(() => {
     const currentTarget = targets[stage];
     if (vpd < currentTarget.min) {
@@ -143,14 +165,14 @@ function App() {
       };
     } else {
       return {
-        gap: 4,
-        color: '#00FF88',
-        label: 'Transpiración Ideal',
+        gap: genetics === 'indica' ? 3 : genetics === 'sativa' ? 5 : 4,
+        color: genetics === 'indica' ? '#00D060' : genetics === 'sativa' ? '#00DFFF' : '#00FF88',
+        label: `Transpiración Óptima (${selectedStrain.name})`,
         class: 'stoma-optimal',
-        particles: Array.from({ length: 3 }, (_, i) => i)
+        particles: Array.from({ length: genetics === 'sativa' ? 5 : genetics === 'indica' ? 2 : 3 }, (_, i) => i)
       };
     }
-  }, [vpd, stage]);
+  }, [vpd, stage, targets, genetics, selectedStrain]);
 
 
   return (
@@ -270,19 +292,19 @@ function App() {
                       />
                       {/* Célula Oclusiva Izquierda */}
                       <path 
-                        d="M 45,10 Q 22,30 45,50 Q 36,30 45,10" 
+                        d={stomaPaths.left} 
                         fill={stomaState.color} 
                         opacity="0.9"
                         transform={`translate(${-stomaState.gap}, 0)`}
-                        style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s' }}
+                        style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s, d 0.4s' }}
                       />
                       {/* Célula Oclusiva Derecha */}
                       <path 
-                        d="M 55,10 Q 78,30 55,50 Q 64,30 55,10" 
+                        d={stomaPaths.right} 
                         fill={stomaState.color} 
                         opacity="0.9"
                         transform={`translate(${stomaState.gap}, 0)`}
-                        style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s' }}
+                        style={{ transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s, d 0.4s' }}
                       />
                     </svg>
                   </div>
@@ -570,28 +592,81 @@ function App() {
                     <p className="module-desc">Selecciona la predominancia genética de tus plantas para ajustar con precisión científica los rangos ideales de DPV óptimos en base a su origen evolutivo.</p>
                     
                     <div className="genetics-grid-selector">
-                      <button className={`genetic-card ${genetics === 'hybrid' ? 'active' : ''}`} onClick={() => setGenetics('hybrid')}>
+                      <button className={`genetic-card ${genetics === 'hybrid' ? 'active' : ''}`} onClick={() => setActiveStrain('hybrid_standard')}>
                         <h4>Híbrida / Automática</h4>
                         <span className="genetic-badge">Estándar</span>
                         <p>Genéticas equilibradas. Rangos clásicos óptimos (Clones: 0.6 | Veg: 1.0 | Floración: 1.4 kPa).</p>
                       </button>
 
-                      <button className={`genetic-card indica-border ${genetics === 'indica' ? 'active' : ''}`} onClick={() => setGenetics('indica')}>
+                      <button className={`genetic-card indica-border ${genetics === 'indica' ? 'active' : ''}`} onClick={() => setActiveStrain('afghan_kush')}>
                         <h4>100% Índica</h4>
                         <span className="genetic-badge ind">Seco / Montaña</span>
                         <p>Originarias de regiones secas y montañosas. Toleran DPVs más altos y prefieren aire ligeramente más seco en floración avanzada.</p>
                       </button>
 
-                      <button className={`genetic-card sativa-border ${genetics === 'sativa' ? 'active' : ''}`} onClick={() => setGenetics('sativa')}>
+                      <button className={`genetic-card sativa-border ${genetics === 'sativa' ? 'active' : ''}`} onClick={() => setActiveStrain('super_silver_haze')}>
                         <h4>100% Sativa</h4>
                         <span className="genetic-badge sat">Tropical / Húmedo</span>
                         <p>Evolucionaron en climas tropicales muy húmedos. Toleran humedades relativas más altas y prefieren DPVs más suaves.</p>
                       </button>
                     </div>
 
+                    <div style={{ marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '25px' }}>
+                      <label style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 800, letterSpacing: '0.5px' }}>🏆 O selecciona un Preset de Variedad Legendaria:</label>
+                      <select 
+                        value={activeStrain} 
+                        onChange={(e) => setActiveStrain(e.target.value)} 
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.5)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: '#fff',
+                          padding: '12px 16px',
+                          borderRadius: '12px',
+                          fontSize: '0.9rem',
+                          fontWeight: 'bold',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        {LEGENDARY_STRAINS.map(s => (
+                          <option key={s.id} value={s.id} style={{ background: '#0a0a0a', color: '#fff' }}>
+                            {s.name} ({s.type === 'indica' ? 'Índica' : s.type === 'sativa' ? 'Sativa' : 'Híbrida'})
+                          </option>
+                        ))}
+                      </select>
+                      
+                      {/* Ficha técnica de la variedad seleccionada */}
+                      <div className="glass" style={{ 
+                        marginTop: '10px', 
+                        padding: '20px', 
+                        borderRadius: '16px',
+                        background: 'rgba(255, 255, 255, 0.01)',
+                        border: '1px solid rgba(255, 255, 255, 0.03)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <strong style={{ fontSize: '0.95rem', color: '#fff' }}>📋 Ficha Científica: {selectedStrain.name}</strong>
+                          <span className="genetic-badge" style={{ 
+                            backgroundColor: genetics === 'indica' ? 'rgba(255, 77, 77, 0.12)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.12)' : 'rgba(0, 255, 136, 0.12)',
+                            color: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88',
+                            border: `1px solid ${genetics === 'indica' ? 'rgba(255, 77, 77, 0.25)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.25)' : 'rgba(0, 255, 136, 0.25)'}`
+                          }}>
+                            {genetics === 'indica' ? 'Índica Pura' : genetics === 'sativa' ? 'Sativa Pura' : 'Híbrida'}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                          {selectedStrain.desc}
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="genetics-applied-targets glow-border">
-                      <h4>Rangos de DPV Optimizados para Genética <span className="highlight" style={{ textTransform: 'uppercase' }}>{genetics}</span>:</h4>
-                      <p className="applied-label-notice">✅ Aplicados dinámicamente en tu calculadora principal y tabla de datos completa.</p>
+                      <h4>Rangos de DPV Optimizados para <span className="highlight" style={{ textTransform: 'uppercase' }}>{selectedStrain.name}</span>:</h4>
+                      <p className="applied-label-notice">✅ Aplicados reactivamente en tu calculadora principal y tabla de datos completa.</p>
                       
                       <div className="applied-ranges-display">
                         <div className="range-display-box">
