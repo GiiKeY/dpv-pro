@@ -114,11 +114,19 @@ export const predictNightRH = (dayTemp, dayRH, tempDrop) => {
 };
 
 /**
- * Estimates daily transpirative water demand in liters based on DPV, plants count, pot size, stage factor, and substrate factor.
+ * Estimates daily transpirative water demand in liters based on DPV, plants count, pot size, stage factor, substrate factor, LAI, and Kc.
  */
-export const calculateEvapotranspiration = (plantsCount, potSize, vpd, stageMultiplier = 1.0, substrateMultiplier = 1.0) => {
-  // Base: 0.08L de agua por litro de maceta por 1.0 kPa de DPV.
-  const liters = plantsCount * potSize * 0.08 * vpd * stageMultiplier * substrateMultiplier;
+export const calculateEvapotranspiration = (
+  plantsCount, 
+  potSize, 
+  vpd, 
+  stageMultiplier = 1.0, 
+  substrateMultiplier = 1.0,
+  lai = 2.0,
+  kc = 1.0
+) => {
+  // Base física: 0.04L por litro de maceta por 1.0 kPa de DPV, escalado dinámicamente por LAI y Kc
+  const liters = plantsCount * potSize * 0.04 * vpd * stageMultiplier * substrateMultiplier * (lai / 2.0) * kc;
   return Math.max(0, liters);
 };
 
@@ -155,6 +163,44 @@ export const calculateWateringFrequency = (potSize, dailyTranspirationPerPlant, 
     days: frequencyDays, 
     text: `Cada ${frequencyDays.toFixed(1)} días` 
   };
+};
+
+/**
+ * Calculates the Stomatal Conductance (gs) in mmol/m²/s using an empirical physiological model.
+ * Model: gs = g0 + [gmax / (1 + sensitivity * VPD)] * [PAR / (PAR + 150)]
+ */
+export const calculateStomatalConductance = (vpd, lightIntensity, archetypeType) => {
+  const g0 = 15; // Conductancia mínima residual nocturna
+  let gmax = 380;
+  let sensitivity = 0.6;
+
+  if (archetypeType === 'sativa') {
+    gmax = 450;
+    sensitivity = 0.4; // Menos sensibles a DPV moderados, alta transpiración
+  } else if (archetypeType === 'indica') {
+    gmax = 320;
+    sensitivity = 0.8; // Muy sensibles, cierran estomas rápido para conservar agua
+  } else if (archetypeType === 'ruderalis') {
+    gmax = 350;
+    sensitivity = 0.5;
+  }
+
+  // Factor de luz (efecto de la radiación PAR sobre la fotosíntesis y apertura estomática)
+  const lightFactor = lightIntensity / (lightIntensity + 150);
+
+  // Conductancia
+  const gs = g0 + (gmax / (1 + sensitivity * Math.max(0, vpd))) * lightFactor;
+  return Math.min(gmax, Math.max(g0, gs));
+};
+
+/**
+ * Calculates the Transpiration Rate (E) in mmol/m²/s based on Stomatal Conductance and VPD.
+ * Equation: E = gs * (VPD / Patm) where Patm is atmospheric pressure (101.3 kPa).
+ */
+export const calculateTranspirationRate = (gs, vpd) => {
+  const Patm = 101.325; // kPa
+  const E = gs * (Math.max(0, vpd) / Patm);
+  return E;
 };
 
 

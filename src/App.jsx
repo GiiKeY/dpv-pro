@@ -1,16 +1,25 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculateIdealHumidity, calculateDewPoint, predictNightRH, calculateEvapotranspiration, calculateWateringFrequency } from './utils/calculations';
-import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { 
+  calculateVPD, 
+  getVPDStatus, 
+  getSmartAdvice, 
+  generateTableData, 
+  calculateIdealHumidity, 
+  calculateDewPoint, 
+  predictNightRH, 
+  calculateEvapotranspiration, 
+  calculateWateringFrequency,
+  calculateStomatalConductance,
+  calculateTranspirationRate
+} from './utils/calculations';
+import { Thermometer, Droplets, Leaf, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award, Activity, Compass, Flame } from 'lucide-react';
 import './App.css';
 
-const LEGENDARY_STRAINS = [
-  { id: 'hybrid_standard', name: 'Híbrida Estándar 🧬', type: 'hybrid', desc: 'Genéticas balanceadas de cultivo moderno indoor.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.2, 1.6] },
-  { id: 'afghan_kush', name: 'Afghan Kush 🏔️', type: 'indica', desc: '100% Índica pura originaria de las montañas del Hindu Kush. Alta resistencia a DPV secos en floración avanzada.', early: [0.5, 0.9], veg: [0.9, 1.3], flower: [1.3, 1.7] },
-  { id: 'northern_lights', name: 'Northern Lights 🌌', type: 'indica', desc: 'Índica dominante clásica. Resistente, prefiere aire seco en floración tardía para resguardo sanitario.', early: [0.5, 0.9], veg: [0.9, 1.3], flower: [1.3, 1.7] },
-  { id: 'super_silver_haze', name: 'Super Silver Haze 🌫️', type: 'sativa', desc: 'Sativa tropical legendaria. Transpiración masiva constante, muy sensible al cierre estomático en aire seco.', early: [0.3, 0.7], veg: [0.7, 1.1], flower: [1.1, 1.5] },
-  { id: 'acapulco_gold', name: 'Acapulco Gold ☀️', type: 'sativa', desc: 'Sativa clásica adaptada evolutivamente a climas costeros calurosos e hiper-húmedos de México.', early: [0.3, 0.7], veg: [0.7, 1.1], flower: [1.1, 1.5] },
-  { id: 'gorilla_glue', name: 'Gorilla Glue #4 🦍', type: 'hybrid', desc: 'Híbrida 50/50 equilibrada de alta potencia. Transpiración constante y resinado masivo estándar.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.2, 1.6] },
-  { id: 'sour_diesel', name: 'Sour Diesel ⛽', type: 'sativa', desc: 'Predominancia Sativa vigorosa. Requiere DPVs suaves y alta humedad para estirar sus ramas sin estrés.', early: [0.35, 0.75], veg: [0.75, 1.15], flower: [1.15, 1.55] }
+const BOTANICAL_ARCHETYPES = [
+  { id: 'hybrid_standard', name: 'Híbrida Estándar 🧬', type: 'hybrid', desc: 'Híbridos modernos balanceados para cultivo en interior (indoor). Poseen una tasa de transpiración estomática equilibrada y excelente estabilidad climática general.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.2, 1.6], stomatalDensity: 180, maxConductance: 380, sensitivity: 0.6, baseKc: 1.0 },
+  { id: 'indica_pure', name: 'Índica de Clima Seco 🏔️', type: 'indica', desc: 'Originaria de valles montañosos semiáridos de Asia Central. Desarrolla hojas muy anchas y cogollos ultra-densos. Es altamente propensa a condensaciones de rocío nocturnas en floración tardía, pero tolera DPVs secos y cálidos en el día.', early: [0.5, 0.9], veg: [0.9, 1.3], flower: [1.3, 1.7], stomatalDensity: 230, maxConductance: 320, sensitivity: 0.8, baseKc: 0.9 },
+  { id: 'sativa_pure', name: 'Sativa Tropical 🌴', type: 'sativa', desc: 'Nativa de zonas ecuatoriales hiper-húmedas. Sus folíolos ultra-delgados disipan calor rápidamente mediante una transpiración foliar masiva. Es muy sensible al cierre estomático en aire seco, prefiriendo DPVs suaves y humedades relativas más altas en floración.', early: [0.3, 0.7], veg: [0.7, 1.1], flower: [1.1, 1.5], stomatalDensity: 140, maxConductance: 450, sensitivity: 0.4, baseKc: 1.15 },
+  { id: 'ruderalis_auto', name: 'Ruderalis / Automática ⚡', type: 'ruderalis', desc: 'Originaria del frío siberiano, adaptada a fotoperíodos continuos e independiente de cambios lumínicos. Posees estomas compactos y muy activos, aunque su bajo volumen radicular la hace sensible a sequías en el sustrato.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.1, 1.5], stomatalDensity: 160, maxConductance: 350, sensitivity: 0.5, baseKc: 0.85 }
 ];
 
 function App() {
@@ -23,12 +32,16 @@ function App() {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [copiedText, setCopiedText] = useState('');
 
-  // Estados para Herramientas Pro (v0.6)
+  // Estados para Herramientas Pro
   const [activeStrain, setActiveStrain] = useState('hybrid_standard');
   const [activeProTool, setActiveProTool] = useState('nocturno');
   
   // Módulo 1: Nocturno
   const [nightTempDrop, setNightTempDrop] = useState(5);
+  
+  // Módulo 2 (Genética Avanzada): PAR y LAI (v0.7)
+  const [lightIntensity, setLightIntensity] = useState(600); 
+  const [leafAreaIndex, setLeafAreaIndex] = useState(2.0);
   
   // Módulo 3: Riego/Evaporación
   const [plantsCount, setPlantsCount] = useState(4);
@@ -70,13 +83,13 @@ function App() {
   const [hasBadge, setHasBadge] = useState(() => {
     try {
       return localStorage.getItem('dpv_pro_badge') === 'true';
-    } catch (e) {
+    } catch {
       return false;
     }
   });
 
   const selectedStrain = useMemo(() => {
-    return LEGENDARY_STRAINS.find(s => s.id === activeStrain) || LEGENDARY_STRAINS[0];
+    return BOTANICAL_ARCHETYPES.find(s => s.id === activeStrain) || BOTANICAL_ARCHETYPES[0];
   }, [activeStrain]);
 
   const genetics = selectedStrain.type;
@@ -92,7 +105,7 @@ function App() {
   const targetVpd = useMemo(() => {
     const currentTarget = targets[stage];
     return (currentTarget.min + currentTarget.max) / 2;
-  }, [stage]);
+  }, [stage, targets]);
 
   const idealHumidity = useMemo(() => {
     return Math.round(calculateIdealHumidity(temp, leafOffset, targetVpd));
@@ -104,7 +117,7 @@ function App() {
 
   const vpd = useMemo(() => calculateVPD(temp, activeHumidity, leafOffset), [temp, activeHumidity, leafOffset]);
   const status = useMemo(() => getVPDStatus(vpd), [vpd]);
-  const advice = useMemo(() => getSmartAdvice(vpd, temp, activeHumidity, targets[stage].min, targets[stage].max), [vpd, temp, activeHumidity, stage]);
+  const advice = useMemo(() => getSmartAdvice(vpd, temp, activeHumidity, targets[stage].min, targets[stage].max), [vpd, temp, activeHumidity, stage, targets]);
 
   const tableData = useMemo(() => generateTableData({ min: 15, max: 35 }, leafOffset), [leafOffset]);
   const humidities = Array.from({ length: 21 }, (_, i) => 100 - i * 5);
@@ -136,6 +149,12 @@ function App() {
         right: "M 58,10 Q 85,30 58,50 Q 70,30 58,10",
         ry: 18
       };
+    } else if (genetics === 'ruderalis') {
+      return {
+        left: "M 44,12 Q 28,30 44,48 Q 38,30 44,12",
+        right: "M 56,12 Q 72,30 56,48 Q 62,30 56,12",
+        ry: 18
+      };
     }
     // Híbrida
     return {
@@ -165,11 +184,11 @@ function App() {
       };
     } else {
       return {
-        gap: genetics === 'indica' ? 3 : genetics === 'sativa' ? 5 : 4,
-        color: genetics === 'indica' ? '#00D060' : genetics === 'sativa' ? '#00DFFF' : '#00FF88',
+        gap: genetics === 'indica' ? 3 : genetics === 'sativa' ? 5 : genetics === 'ruderalis' ? 4.5 : 4,
+        color: genetics === 'indica' ? '#00D060' : genetics === 'sativa' ? '#00DFFF' : genetics === 'ruderalis' ? '#D000FF' : '#00FF88',
         label: `Transpiración Óptima (${selectedStrain.name})`,
         class: 'stoma-optimal',
-        particles: Array.from({ length: genetics === 'sativa' ? 5 : genetics === 'indica' ? 2 : 3 }, (_, i) => i)
+        particles: Array.from({ length: genetics === 'sativa' ? 5 : genetics === 'indica' ? 2 : genetics === 'ruderalis' ? 4 : 3 }, (_, i) => i)
       };
     }
   }, [vpd, stage, targets, genetics, selectedStrain]);
@@ -219,26 +238,42 @@ function App() {
                 ))}
               </div>
               
-              <div className="genetics-indicator-badge glass" style={{
-                borderColor: genetics === 'indica' ? 'rgba(255, 77, 77, 0.3)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.3)' : 'rgba(0, 255, 136, 0.15)',
-                boxShadow: genetics === 'indica' ? '0 0 12px rgba(255, 77, 77, 0.05)' : genetics === 'sativa' ? '0 0 12px rgba(0, 223, 255, 0.05)' : 'none',
+              <div className="genetics-selector-badge glass" style={{
+                borderColor: genetics === 'indica' ? 'rgba(255, 77, 77, 0.3)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.3)' : genetics === 'ruderalis' ? 'rgba(208, 0, 255, 0.3)' : 'rgba(0, 255, 136, 0.15)',
+                boxShadow: genetics === 'indica' ? '0 0 12px rgba(255, 77, 77, 0.05)' : genetics === 'sativa' ? '0 0 12px rgba(0, 223, 255, 0.05)' : genetics === 'ruderalis' ? '0 0 12px rgba(208, 0, 255, 0.05)' : 'none',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '10px 18px',
+                gap: '8px',
+                padding: '6px 14px',
                 borderRadius: '12px',
                 fontSize: '0.85rem',
                 color: 'var(--text-secondary)',
                 fontWeight: 600
               }}>
-                🧬 Perfil: <span style={{
-                  color: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88',
-                  textTransform: 'uppercase',
-                  fontWeight: 800,
-                  letterSpacing: '0.5px'
-                }}>
-                  {genetics === 'indica' ? 'Índica 🏔️' : genetics === 'sativa' ? 'Sativa 🌴' : 'Híbrida'}
-                </span>
+                <span style={{ whiteSpace: 'nowrap' }}>🧬 Perfil Genético:</span>
+                <select 
+                  value={activeStrain} 
+                  onChange={(e) => setActiveStrain(e.target.value)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : genetics === 'ruderalis' ? '#D000FF' : '#00FF88',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontFamily: 'inherit',
+                    paddingRight: '5px'
+                  }}
+                >
+                  {BOTANICAL_ARCHETYPES.map(s => (
+                    <option key={s.id} value={s.id} style={{ background: '#0a0a0a', color: '#fff', textTransform: 'none' }}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="mode-selector glass">
@@ -589,79 +624,345 @@ function App() {
                       <Target size={24} color="#00FF88" />
                       <h3>Módulo 2: Configuración Específica por Genética Fisiológica</h3>
                     </div>
-                    <p className="module-desc">Selecciona la predominancia genética de tus plantas para ajustar con precisión científica los rangos ideales de DPV óptimos en base a su origen evolutivo.</p>
+                    <p className="module-desc">Selecciona el arquetipo botánico de tus plantas para adaptar con precisión científica los rangos ideales de DPV, estudiar la dinámica estomática y evaluar vulnerabilidades de cultivo libres de copyright.</p>
                     
-                    <div className="genetics-grid-selector">
-                      <button className={`genetic-card ${genetics === 'hybrid' ? 'active' : ''}`} onClick={() => setActiveStrain('hybrid_standard')}>
-                        <h4>Híbrida / Automática</h4>
-                        <span className="genetic-badge">Estándar</span>
-                        <p>Genéticas equilibradas. Rangos clásicos óptimos (Clones: 0.6 | Veg: 1.0 | Floración: 1.4 kPa).</p>
-                      </button>
+                    <div className="genetics-grid-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+                      {BOTANICAL_ARCHETYPES.map((arch) => {
+                        const isSelected = activeStrain === arch.id;
+                        let borderClass = '';
+                        if (arch.type === 'indica') borderClass = 'indica-border';
+                        else if (arch.type === 'sativa') borderClass = 'sativa-border';
+                        else if (arch.type === 'ruderalis') borderClass = 'ruderalis-border';
 
-                      <button className={`genetic-card indica-border ${genetics === 'indica' ? 'active' : ''}`} onClick={() => setActiveStrain('afghan_kush')}>
-                        <h4>100% Índica</h4>
-                        <span className="genetic-badge ind">Seco / Montaña</span>
-                        <p>Originarias de regiones secas y montañosas. Toleran DPVs más altos y prefieren aire ligeramente más seco en floración avanzada.</p>
-                      </button>
-
-                      <button className={`genetic-card sativa-border ${genetics === 'sativa' ? 'active' : ''}`} onClick={() => setActiveStrain('super_silver_haze')}>
-                        <h4>100% Sativa</h4>
-                        <span className="genetic-badge sat">Tropical / Húmedo</span>
-                        <p>Evolucionaron en climas tropicales muy húmedos. Toleran humedades relativas más altas y prefieren DPVs más suaves.</p>
-                      </button>
+                        return (
+                          <button 
+                            key={arch.id}
+                            className={`genetic-card ${borderClass} ${isSelected ? 'active' : ''}`} 
+                            onClick={() => setActiveStrain(arch.id)}
+                            style={{
+                              padding: '16px',
+                              borderRadius: '16px',
+                              textAlign: 'left',
+                              background: isSelected ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.01)',
+                              border: isSelected 
+                                ? `2px solid ${arch.type === 'indica' ? '#FF4D4D' : arch.type === 'sativa' ? '#00DFFF' : arch.type === 'ruderalis' ? '#D000FF' : '#00FF88'}` 
+                                : '1px solid rgba(255, 255, 255, 0.05)',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s'
+                            }}
+                          >
+                            <h4 style={{ margin: '0 0 4px', fontSize: '0.95rem', color: '#fff' }}>{arch.name}</h4>
+                            <span className="genetic-badge" style={{ 
+                              fontSize: '0.65rem', 
+                              padding: '2px 6px', 
+                              borderRadius: '4px',
+                              display: 'inline-block',
+                              marginBottom: '8px',
+                              backgroundColor: arch.type === 'indica' ? 'rgba(255, 77, 77, 0.15)' : arch.type === 'sativa' ? 'rgba(0, 223, 255, 0.15)' : arch.type === 'ruderalis' ? 'rgba(208, 0, 255, 0.15)' : 'rgba(0, 255, 136, 0.15)',
+                              color: arch.type === 'indica' ? '#FF4D4D' : arch.type === 'sativa' ? '#00DFFF' : arch.type === 'ruderalis' ? '#D000FF' : '#00FF88'
+                            }}>
+                              {arch.type === 'indica' ? 'Clima Seco' : arch.type === 'sativa' ? 'Tropical' : arch.type === 'ruderalis' ? 'Automática' : 'Estándar'}
+                            </span>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                              {arch.desc.substring(0, 100)}...
+                            </p>
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    <div style={{ marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '25px' }}>
-                      <label style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 800, letterSpacing: '0.5px' }}>🏆 O selecciona un Preset de Variedad Legendaria:</label>
-                      <select 
-                        value={activeStrain} 
-                        onChange={(e) => setActiveStrain(e.target.value)} 
-                        style={{
-                          background: 'rgba(0, 0, 0, 0.5)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          color: '#fff',
-                          padding: '12px 16px',
-                          borderRadius: '12px',
-                          fontSize: '0.9rem',
-                          fontWeight: 'bold',
-                          outline: 'none',
-                          cursor: 'pointer',
-                          width: '100%',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        {LEGENDARY_STRAINS.map(s => (
-                          <option key={s.id} value={s.id} style={{ background: '#0a0a0a', color: '#fff' }}>
-                            {s.name} ({s.type === 'indica' ? 'Índica' : s.type === 'sativa' ? 'Sativa' : 'Híbrida'})
-                          </option>
-                        ))}
-                      </select>
-                      
-                      {/* Ficha técnica de la variedad seleccionada */}
-                      <div className="glass" style={{ 
-                        marginTop: '10px', 
-                        padding: '20px', 
-                        borderRadius: '16px',
-                        background: 'rgba(255, 255, 255, 0.01)',
-                        border: '1px solid rgba(255, 255, 255, 0.03)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong style={{ fontSize: '0.95rem', color: '#fff' }}>📋 Ficha Científica: {selectedStrain.name}</strong>
-                          <span className="genetic-badge" style={{ 
-                            backgroundColor: genetics === 'indica' ? 'rgba(255, 77, 77, 0.12)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.12)' : 'rgba(0, 255, 136, 0.12)',
-                            color: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88',
-                            border: `1px solid ${genetics === 'indica' ? 'rgba(255, 77, 77, 0.25)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.25)' : 'rgba(0, 255, 136, 0.25)'}`
-                          }}>
-                            {genetics === 'indica' ? 'Índica Pura' : genetics === 'sativa' ? 'Sativa Pura' : 'Híbrida'}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                          {selectedStrain.desc}
-                        </p>
+                    {/* Ficha técnica detallada */}
+                    <div className="glass" style={{ 
+                      padding: '20px', 
+                      borderRadius: '16px',
+                      background: 'rgba(255, 255, 255, 0.01)',
+                      border: '1px solid rgba(255, 255, 255, 0.03)',
+                      marginBottom: '25px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <strong style={{ fontSize: '1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Compass size={18} color="#00FF88" /> Ficha Científica: {selectedStrain.name}
+                        </strong>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kc Base: <strong>{selectedStrain.baseKc}</strong></span>
                       </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                        {selectedStrain.desc}
+                      </p>
+                    </div>
+
+                    {/* NUEVO MÓDULO A: SIMULADOR DE CONDUCTANCIA ESTOMÁTICA */}
+                    <div className="glow-border" style={{ 
+                      padding: '20px', 
+                      borderRadius: '16px', 
+                      background: 'rgba(0, 0, 0, 0.2)', 
+                      marginBottom: '25px',
+                      borderLeft: `4px solid ${genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : genetics === 'ruderalis' ? '#D000FF' : '#00FF88'}`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                        <Activity size={20} color="#00FF88" className="icon-pulse" />
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
+                          Módulo A: Simulador de Conductancia Estomática (g_s) y Tasa de Transpiración
+                        </h4>
+                      </div>
+                      
+                      <div className="module-form-grid" style={{ marginBottom: '15px' }}>
+                        <div className="form-group">
+                          <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Intensidad Lumínica PAR:</span>
+                            <strong style={{ color: '#fff' }}>{lightIntensity} µmol/m²/s</strong>
+                          </label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="1500" 
+                            step="50" 
+                            value={lightIntensity} 
+                            onChange={(e) => setLightIntensity(parseInt(e.target.value))} 
+                          />
+                          <span className="slider-limits">Noche: 0 | Floración LED: 800 - 1200+</span>
+                        </div>
+                        
+                        <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Parámetros Fisiológicos para {selectedStrain.name}:</span>
+                          <div style={{ display: 'flex', gap: '15px', marginTop: '6px', fontSize: '0.75rem' }}>
+                            <span>Densidad: <strong>{selectedStrain.stomatalDensity} estomas/mm²</strong></span>
+                            <span>g_max: <strong>{selectedStrain.maxConductance} mmol/m²/s</strong></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const gs = calculateStomatalConductance(vpd, lightIntensity, genetics);
+                        const E = calculateTranspirationRate(gs, vpd);
+                        const percentGs = (gs / selectedStrain.maxConductance) * 100;
+                        
+                        let gsStatus = { label: 'Optimizada', color: '#00FF88' };
+                        if (percentGs < 25) gsStatus = { label: 'Estrés Severo (Estomas Cerrados)', color: '#FF4D4D' };
+                        else if (percentGs >= 25 && percentGs < 60) gsStatus = { label: 'Ajuste Parcial / Transpiración Moderada', color: '#FFD600' };
+                        
+                        return (
+                          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Conductancia Estomática (g_s)</span>
+                                <strong style={{ fontSize: '1.2rem', color: gsStatus.color }}>{gs.toFixed(1)} <span style={{ fontSize: '0.75rem' }}>mmol/m²/s</span></strong>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Tasa de Transpiración de la Hoja (E)</span>
+                                <strong style={{ fontSize: '1.2rem', color: '#00F0FF' }}>{E.toFixed(3)} <span style={{ fontSize: '0.75rem' }}>mmol/m²/s</span></strong>
+                              </div>
+                            </div>
+
+                            <div style={{ marginBottom: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                <span>Apertura Estomática: <strong>{gsStatus.label}</strong></span>
+                                <span>{percentGs.toFixed(0)}% de capacidad</span>
+                              </div>
+                              <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${percentGs}%`, 
+                                  height: '100%', 
+                                  backgroundColor: gsStatus.color, 
+                                  boxShadow: `0 0 8px ${gsStatus.color}`,
+                                  transition: 'width 0.4s ease-out' 
+                                }} />
+                              </div>
+                            </div>
+                            
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+                              {lightIntensity === 0 
+                                ? '🌙 Foco Apagado: Conductancia mínima nocturna regulada para evitar la deshidratación y desbalance osmótico.'
+                                : percentGs < 25 
+                                  ? '⚠️ El DPV actual es demasiado hostil para esta genética. Las células oclusivas se cerraron herméticamente para evitar la embolia tisular.'
+                                  : '🟢 Los estomas están operando en una zona fotosintéticamente óptima, permitiendo una excelente absorción de CO2 y refrigeración foliar.'
+                              }
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* NUEVO MÓDULO B: ÍNDICE DE ÁREA FOLIAR (LAI) */}
+                    <div className="glow-border" style={{ 
+                      padding: '20px', 
+                      borderRadius: '16px', 
+                      background: 'rgba(0, 0, 0, 0.2)', 
+                      marginBottom: '25px',
+                      borderLeft: '4px solid #00F0FF'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                        <Leaf size={20} color="#00F0FF" />
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
+                          Módulo B: Índice de Área Foliar (LAI) y Sombreado de Canopia
+                        </h4>
+                      </div>
+
+                      <div className="module-form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                        <div className="form-group" style={{ maxWidth: '400px' }}>
+                          <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Índice de Área Foliar (LAI):</span>
+                            <strong style={{ color: '#00F0FF' }}>{leafAreaIndex.toFixed(1)} m²/m²</strong>
+                          </label>
+                          <input 
+                            type="range" 
+                            min="0.5" 
+                            max="5.0" 
+                            step="0.1" 
+                            value={leafAreaIndex} 
+                            onChange={(e) => setLeafAreaIndex(parseFloat(e.target.value))} 
+                          />
+                          <span className="slider-limits">Clones sueltos: 0.5 | Canopia cerrada en floración: 4.0+</span>
+                        </div>
+                      </div>
+
+                      <div style={{ 
+                        marginTop: '15px', 
+                        padding: '12px 16px', 
+                        borderRadius: '12px', 
+                        background: 'rgba(255, 255, 255, 0.01)', 
+                        border: '1px solid rgba(255,255,255,0.03)',
+                        fontSize: '0.8rem',
+                        color: 'var(--text-secondary)',
+                        lineHeight: 1.4
+                      }}>
+                        💡 <strong>Efecto en la Evapotranspiración:</strong> Un LAI de <strong>{leafAreaIndex.toFixed(1)}</strong> significa que posees {leafAreaIndex.toFixed(1)} metros cuadrados de hoja por cada metro cuadrado de suelo. Esto se ha enlazado automáticamente con el <strong>Módulo 3 (Demanda de Riego)</strong>, ajustando los litros requeridos en tiempo real.
+                      </div>
+                    </div>
+
+                    {/* NUEVO MÓDULO C: SEMÁFORO BIOLÓGICO INTERACTIVO */}
+                    <div className="glow-border" style={{ 
+                      padding: '20px', 
+                      borderRadius: '16px', 
+                      background: 'rgba(0, 0, 0, 0.2)', 
+                      borderLeft: '4px solid #FF4D4D',
+                      marginBottom: '25px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                        <Flame size={20} color="#FF4D4D" className="icon-pulse" />
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
+                          Módulo C: Semáforo de Riesgo Biológico Específico de {selectedStrain.name}
+                        </h4>
+                      </div>
+
+                      {(() => {
+                        let fungiRisk = { label: 'Bajo', color: '#00FF88', desc: 'Ambiente seguro para los cogollos.' };
+                        let stressRisk = { label: 'Bajo', color: '#00FF88', desc: 'Transpiración estomática fluida.' };
+
+                        // Lógica de Riesgos Biológicos dinámicos
+                        // 1. Riesgo de Hongos (Botrytis/Oidio) por DPV bajo
+                        if (vpd < 0.8) {
+                          if (genetics === 'indica') {
+                            fungiRisk = { 
+                              label: 'ALTO (Sensibilidad Índica)', 
+                              color: '#FFD600', 
+                              desc: 'El DPV es muy bajo. Las Índicas tienen flores ultra-densas y cerradas que atrapan micro-humedad interna con extrema facilidad.' 
+                            };
+                            if (vpd < 0.5) {
+                              fungiRisk = { 
+                                label: 'CRÍTICO (Botrytis / Oídio)', 
+                                color: '#FF4D4D', 
+                                desc: 'Peligro inmediato. Humedad estancada dentro del cogollo. Es indispensable encarecidamente aumentar la ventilación interna.' 
+                              };
+                            }
+                          } else if (genetics === 'sativa') {
+                            fungiRisk = { 
+                              label: 'Moderado-Bajo (Hojas Tropicales)', 
+                              color: '#00FF88', 
+                              desc: 'Estructura aireada y espigada. Mayor resistencia natural al estancamiento de vapor en floración.' 
+                            };
+                            if (vpd < 0.4) {
+                              fungiRisk = { 
+                                label: 'Moderado', 
+                                color: '#FFD600', 
+                                desc: 'DPV sumamente bajo. Estancamiento de flujo de savia, riesgo leve de Oídio en hojas bajas.' 
+                              };
+                            }
+                          } else {
+                            fungiRisk = { 
+                              label: 'Moderado', 
+                              color: '#FFD600', 
+                              desc: 'Monitorear puntas altas. Humedad general por encima de lo deseado para una floración segura.' 
+                            };
+                            if (vpd < 0.4) {
+                              fungiRisk = { 
+                                label: 'Alto', 
+                                color: '#FF4D4D', 
+                                desc: 'Fuerte riesgo de formación de hongos patógenos.' 
+                              };
+                            }
+                          }
+                        }
+
+                        // 2. Riesgo de Cierre Estomático por DPV Alto
+                        if (vpd > 1.4) {
+                          if (genetics === 'sativa') {
+                            stressRisk = { 
+                              label: 'ALTO (Sensibilidad Sativa)', 
+                              color: '#FFD600', 
+                              desc: 'Las Sativas tropicales poseen folíolos delgados con alta conductancia que cierran estomas rápidamente para evitar embolias en el tallo si el aire se seca.' 
+                            };
+                            if (vpd > 1.6) {
+                              stressRisk = { 
+                                label: 'CRÍTICO (Estrés Hídrico)', 
+                                color: '#FF4D4D', 
+                                desc: 'Estomas completamente clausurados. La fotosíntesis se ha detenido. Hojas susceptibles a quemaduras térmicas bajo luz intensa.' 
+                              };
+                            }
+                          } else if (genetics === 'indica') {
+                            stressRisk = { 
+                              label: 'Bajo-Tolerante (Origen Seco)', 
+                              color: '#00FF88', 
+                              desc: 'Genética adaptada a estepas áridas. Tolera DPVs altos y aire seco promoviendo una producción densa de resina.' 
+                            };
+                            if (vpd > 1.7) {
+                              stressRisk = { 
+                                label: 'Moderado', 
+                                color: '#FFD600', 
+                                desc: 'Comienzo de fatiga estomática. Aumentar ligeramente la humedad relativa de la sala.' 
+                              };
+                            }
+                          } else {
+                            stressRisk = { 
+                              label: 'Moderado', 
+                              color: '#FFD600', 
+                              desc: 'El DPV elevado estimula un secado rápido del sustrato. Asegurar riegos constantes.' 
+                            };
+                            if (vpd > 1.6) {
+                              stressRisk = { 
+                                label: 'Alto (Cierre Estomático)', 
+                                color: '#FF4D4D', 
+                                desc: 'Estrés por calor seco. Planta a la defensiva hídrica.' 
+                              };
+                            }
+                          }
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+                              <div style={{ background: fungiRisk.color + '0a', border: `1px solid ${fungiRisk.color}33`, padding: '15px', borderRadius: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, color: fungiRisk.color, marginBottom: '6px' }}>
+                                  <span>Riesgo de Hongos (Botrytis)</span>
+                                  <span>{fungiRisk.label}</span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>{fungiRisk.desc}</p>
+                              </div>
+                              <div style={{ background: stressRisk.color + '0a', border: `1px solid ${stressRisk.color}33`, padding: '15px', borderRadius: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, color: stressRisk.color, marginBottom: '6px' }}>
+                                  <span>Estrés Estomático por DPV Seco</span>
+                                  <span>{stressRisk.label}</span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>{stressRisk.desc}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="pro-advice-tip" style={{ marginTop: '5px', borderLeftColor: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88' }}>
+                              🧬 <strong>Fisiología de Adaptación Genética:</strong><br />
+                              Al cultivar <strong>{selectedStrain.name}</strong>, el DPV ideal recomendado para fotosíntesis óptima en la fase de {targets[stage].name} es de <strong>{targets[stage].min} - {targets[stage].max} kPa</strong>. Asegúrate de regular tus ventiladores y extractores para seguir este rango personalizado.
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="genetics-applied-targets glow-border">
@@ -681,24 +982,6 @@ function App() {
                           <span className="stage-name">Floración</span>
                           <span className="range-val">{targets.flower.min.toFixed(1)} - {targets.flower.max.toFixed(1)} kPa</span>
                         </div>
-                      </div>
-
-                      <div className="pro-advice-tip" style={{ marginTop: '20px', borderLeftColor: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88' }}>
-                        {genetics === 'indica' && (
-                          <p style={{ margin: 0 }}>
-                            🏔️ <strong>Adaptación Fisiológica Índica:</strong> Originarias de climas secos y montañosos (Hindu Kush). Sus hojas anchas con alta densidad estomática prefieren DPVs más altos (aire seco en floración tardía hasta 1.7 kPa) para aumentar la producción de resina densa y terpenos protectores contra los rayos UV, tolerando humedades relativas más bajas de forma segura.
-                          </p>
-                        )}
-                        {genetics === 'sativa' && (
-                          <p style={{ margin: 0 }}>
-                            🌴 <strong>Adaptación Fisiológica Sativa:</strong> Nativas de selvas ecuatoriales cálidas e hiper-húmedas. Sus folíolos ultra-delgados disipan calor rápidamente y toleran humedades muy altas. Prefieren DPVs más suaves (máximo 1.5 kPa en floración) para evitar el colapso del flujo de transpiración y el desecado radicular acelerado.
-                          </p>
-                        )}
-                        {genetics === 'hybrid' && (
-                          <p style={{ margin: 0 }}>
-                            🧬 <strong>Adaptación Fisiológica Híbrida/Auto:</strong> Cruces optimizados para rendimiento y estabilidad climática en cultivos de interior (indoor). Siguen el perfil estándar de transpiración estomática equilibrada sin inclinarse hacia extremos desérticos o selváticos.
-                          </p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -1072,7 +1355,9 @@ function App() {
                               setHasBadge(true);
                               try {
                                 localStorage.setItem('dpv_pro_badge', 'true');
-                              } catch (e) {}
+                              } catch (err) {
+                                console.warn('Storage blocked:', err);
+                              }
                             }
                           }}
                           disabled={!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3 || !quizAnswers.q4 || !quizAnswers.q5}
