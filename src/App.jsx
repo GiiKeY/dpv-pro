@@ -28,6 +28,7 @@ function App() {
   // Módulo 4: Costo Eléctrico (Soporta múltiples dispositivos a la vez)
   const [kwhCost, setKwhCost] = useState(0.15);
   const [activeDevices, setActiveDevices] = useState({
+    lights: true,
     humidifier: false,
     dehumidifier: false,
     extractor: true,
@@ -35,6 +36,7 @@ function App() {
     ac: false
   });
   const [deviceWattsMap, setDeviceWattsMap] = useState({
+    lights: 240,
     humidifier: 40,
     dehumidifier: 320,
     extractor: 60,
@@ -42,12 +44,14 @@ function App() {
     ac: 1200
   });
   const [deviceHoursMap, setDeviceHoursMap] = useState({
+    lights: 18,
     humidifier: 12,
     dehumidifier: 8,
     extractor: 24,
     heater: 6,
     ac: 8
   });
+
   
   // Módulo 5: Academia DPV (5 Preguntas de precisión)
   const [quizAnswers, setQuizAnswers] = useState({ q1: '', q2: '', q3: '', q4: '', q5: '' });
@@ -738,9 +742,10 @@ function App() {
                         <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Equipamiento de tu Sala (Activa los que utilices):</h4>
                         {(() => {
                           const deviceLabels = {
-                            humidifier: { name: 'Humidificador 💧', desc: 'Aumenta humedad relativa para bajar el DPV' },
-                            dehumidifier: { name: 'Deshumidificador ❄️', desc: 'Reduce humedad ambiental para subir el DPV' },
-                            extractor: { name: 'Extractor / Turbina 🌪️', desc: 'Evacua calor/humedad de los focos' },
+                            lights: { name: 'Iluminación de Cultivo 💡', desc: 'Lámparas LED, Sodio (HPS) o LEC indispensables para la fotosíntesis' },
+                            humidifier: { name: 'Humidificador 💧', desc: 'Aumenta la humedad relativa para bajar el DPV' },
+                            dehumidifier: { name: 'Deshumidificador ❄️', desc: 'Reduce la humedad ambiental para subir el DPV' },
+                            extractor: { name: 'Extractor / Turbina 🌪️', desc: 'Evacua calor y humedad de los focos' },
                             heater: { name: 'Calefactor / Estufa 🔥', desc: 'Calienta de noche para alejar el punto de rocío' },
                             ac: { name: 'Aire Acondicionado ❄️', desc: 'Climatiza y deshumidifica la sala' }
                           };
@@ -806,6 +811,14 @@ function App() {
                                       value={deviceHoursMap[key]} 
                                       onChange={(e) => setDeviceHoursMap({ ...deviceHoursMap, [key]: parseInt(e.target.value) || 0 })} 
                                     />
+                                    {key === 'lights' && (
+                                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                                        <button className={`mode-btn ${deviceHoursMap.lights === 12 ? 'active' : ''}`} onClick={() => setDeviceHoursMap({ ...deviceHoursMap, lights: 12 })} style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1, whiteSpace: 'nowrap' }}>12/12 🌸</button>
+                                        <button className={`mode-btn ${deviceHoursMap.lights === 18 ? 'active' : ''}`} onClick={() => setDeviceHoursMap({ ...deviceHoursMap, lights: 18 })} style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1, whiteSpace: 'nowrap' }}>18/6 🌿</button>
+                                        <button className={`mode-btn ${deviceHoursMap.lights === 20 ? 'active' : ''}`} onClick={() => setDeviceHoursMap({ ...deviceHoursMap, lights: 20 })} style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1, whiteSpace: 'nowrap' }}>20/4 ⚡</button>
+                                        <button className={`mode-btn ${deviceHoursMap.lights === 24 ? 'active' : ''}`} onClick={() => setDeviceHoursMap({ ...deviceHoursMap, lights: 24 })} style={{ padding: '4px 8px', fontSize: '0.7rem', flex: 1, whiteSpace: 'nowrap' }}>24h ♾️</button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
