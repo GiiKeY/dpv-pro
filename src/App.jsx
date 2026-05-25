@@ -322,6 +322,48 @@ function App() {
           </div>
         </section>
 
+        <section className="education-section glass warning-gradient">
+          <div className="info-header">
+            <Thermometer size={24} color="#FFD600" />
+            <h3>Guía Científica: El Punto de Rocío</h3>
+          </div>
+          <div className="education-grid">
+            <div className="edu-card">
+              <h4>1. ¿Qué es el Punto de Rocío?</h4>
+              <p>Es la temperatura exacta a la cual el aire de tu sala se satura por completo de humedad. Si la temperatura cae por debajo de este punto, el vapor invisible se transforma físicamente en gotas de agua líquida.</p>
+            </div>
+            <div className="edu-card">
+              <h4>2. El Peligro Nocturno</h4>
+              <p>Al apagar las luces, la temperatura del aire cae rápido, pero las hojas y flores se enfrían aún más rápido. Si la temperatura de tu cogollo desciende por debajo de la del punto de rocío, se condensará agua en su interior.</p>
+            </div>
+            <div className="edu-card">
+              <h4>3. El Riesgo de Botrytis</h4>
+              <p>El agua líquida atrapada en cogollos densos y a oscuras es el hábitat perfecto para que las esporas de Botrytis (moho gris) germinen en pocas horas, arruinando por completo tu cosecha.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="education-section glass biological-gradient">
+          <div className="info-header">
+            <Target size={24} color="#00FF88" />
+            <h3>Semáforo de Riesgo Biológico</h3>
+          </div>
+          <div className="education-grid">
+            <div className="edu-card pest-card dry-risk">
+              <h4>🔥 DPV Alto (Calor Seco)</h4>
+              <p>Un DPV excesivo genera estrés hídrico. Este ambiente caliente y de aire sumamente seco favorece la reproducción rápida y exponencial de la <strong>Araña Roja</strong> y trips.</p>
+            </div>
+            <div className="edu-card pest-card ideal-risk">
+              <h4>🟢 DPV Ideal (Punto Dulce)</h4>
+              <p>Máxima fotosíntesis y transpiración fluida. Las plantas son fuertes y el ambiente no otorga ventajas adaptativas a plagas ni a hongos.</p>
+            </div>
+            <div className="edu-card pest-card wet-risk">
+              <h4>❄️ DPV Bajo (Humedad Fría)</h4>
+              <p>La transpiración se detiene por completo. El ambiente excesivamente húmedo y frío es el caldo de cultivo ideal para esporas de <strong>Oídio y Botrytis</strong>.</p>
+            </div>
+          </div>
+        </section>
+
         <section className="info-section glass">
           <div className="info-header">
             <Target size={24} color="#00FF88" />
