@@ -114,12 +114,47 @@ export const predictNightRH = (dayTemp, dayRH, tempDrop) => {
 };
 
 /**
- * Estimates daily transpirative water demand in liters based on DPV, plants count, and pot size.
+ * Estimates daily transpirative water demand in liters based on DPV, plants count, pot size, stage factor, and substrate factor.
  */
-export const calculateEvapotranspiration = (plantsCount, potSize, vpd) => {
-  // Una planta madura evapotranspira aprox 0.08L de agua por litro de maceta por 1.0 kPa de demanda (VPD).
-  const liters = plantsCount * potSize * 0.08 * vpd;
+export const calculateEvapotranspiration = (plantsCount, potSize, vpd, stageMultiplier = 1.0, substrateMultiplier = 1.0) => {
+  // Base: 0.08L de agua por litro de maceta por 1.0 kPa de DPV.
+  const liters = plantsCount * potSize * 0.08 * vpd * stageMultiplier * substrateMultiplier;
   return Math.max(0, liters);
+};
+
+/**
+ * Estimates the watering frequency in days based on pot size, substrate, and daily transpiration per plant.
+ */
+export const calculateWateringFrequency = (potSize, dailyTranspirationPerPlant, substrateType) => {
+  if (dailyTranspirationPerPlant <= 0) return { days: 0, text: 'N/A' };
+  
+  let retentionFactor = 0.30; // Suelo / Turba por defecto (30% retención de agua)
+  let usableThreshold = 0.50;  // 50% de la capacidad de campo utilizable antes del riego
+  
+  if (substrateType === 'coco') {
+    retentionFactor = 0.40; // El coco retiene un 40% de agua pero es muy aireado
+    usableThreshold = 0.35;  // Se seca un 35% de la capacidad de agua retenida
+  } else if (substrateType === 'hydro') {
+    return { days: 0, text: 'Circulación Continua' };
+  }
+  
+  const totalWaterCapacity = potSize * retentionFactor; // Litros totales de agua retenidos
+  const usableWater = totalWaterCapacity * usableThreshold; // Litros que la planta puede absorber de forma segura
+  
+  const frequencyDays = usableWater / dailyTranspirationPerPlant;
+  
+  if (frequencyDays < 1) {
+    const dailyRiegos = 1 / frequencyDays;
+    return { 
+      days: frequencyDays, 
+      text: `${dailyRiegos.toFixed(1)} riegos por día` 
+    };
+  }
+  
+  return { 
+    days: frequencyDays, 
+    text: `Cada ${frequencyDays.toFixed(1)} días` 
+  };
 };
 
 

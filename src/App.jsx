@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculateIdealHumidity, calculateDewPoint, predictNightRH, calculateEvapotranspiration } from './utils/calculations';
-import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle } from 'lucide-react';
+import { calculateVPD, getVPDStatus, getSmartAdvice, generateTableData, calculateIdealHumidity, calculateDewPoint, predictNightRH, calculateEvapotranspiration, calculateWateringFrequency } from './utils/calculations';
+import { Thermometer, Droplets, Leaf, Info, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -23,16 +23,43 @@ function App() {
   // Módulo 3: Riego/Evaporación
   const [plantsCount, setPlantsCount] = useState(4);
   const [potSize, setPotSize] = useState(10);
+  const [substrate, setSubstrate] = useState('soil'); // 'soil', 'coco', 'hydro'
   
-  // Módulo 4: Costo Eléctrico
+  // Módulo 4: Costo Eléctrico (Soporta múltiples dispositivos a la vez)
   const [kwhCost, setKwhCost] = useState(0.15);
-  const [deviceWatts, setDeviceWatts] = useState(250);
-  const [deviceHours, setDeviceHours] = useState(12);
+  const [activeDevices, setActiveDevices] = useState({
+    humidifier: false,
+    dehumidifier: false,
+    extractor: true,
+    heater: false,
+    ac: false
+  });
+  const [deviceWattsMap, setDeviceWattsMap] = useState({
+    humidifier: 40,
+    dehumidifier: 320,
+    extractor: 60,
+    heater: 1500,
+    ac: 1200
+  });
+  const [deviceHoursMap, setDeviceHoursMap] = useState({
+    humidifier: 12,
+    dehumidifier: 8,
+    extractor: 24,
+    heater: 6,
+    ac: 8
+  });
   
-  // Módulo 5: Academia DPV
-  const [quizAnswers, setQuizAnswers] = useState({ q1: '', q2: '', q3: '' });
+  // Módulo 5: Academia DPV (5 Preguntas de precisión)
+  const [quizAnswers, setQuizAnswers] = useState({ q1: '', q2: '', q3: '', q4: '', q5: '' });
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const [hasBadge, setHasBadge] = useState(() => {
+    try {
+      return localStorage.getItem('dpv_pro_badge') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
 
   const targets = useMemo(() => {
     const baseTargets = {
@@ -125,7 +152,15 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1 className="glow-text">DPV <span className="highlight">PRO</span></h1>
+        <div className="header-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', flexWrap: 'wrap' }}>
+          <h1 className="glow-text" style={{ margin: 0 }}>DPV <span className="highlight">PRO</span></h1>
+          {hasBadge && (
+            <div className="maestro-badge-glow" title="¡Felicidades Maestro de las Sombras! Certificado en Fisiología de Vapor y DPV.">
+              <Award size={16} color="#FFD600" className="icon-pulse" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#FFD600', letterSpacing: '0.5px' }}>MAESTRO SHADOW</span>
+            </div>
+          )}
+        </div>
         <p className="subtitle">Herramienta de Precisión Científica para Cultivadores</p>
       </header>
 
@@ -156,6 +191,28 @@ function App() {
                     {targets[s].name}
                   </button>
                 ))}
+              </div>
+              
+              <div className="genetics-indicator-badge glass" style={{
+                borderColor: genetics === 'indica' ? 'rgba(255, 77, 77, 0.3)' : genetics === 'sativa' ? 'rgba(0, 223, 255, 0.3)' : 'rgba(0, 255, 136, 0.15)',
+                boxShadow: genetics === 'indica' ? '0 0 12px rgba(255, 77, 77, 0.05)' : genetics === 'sativa' ? '0 0 12px rgba(0, 223, 255, 0.05)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '10px 18px',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                color: 'var(--text-secondary)',
+                fontWeight: 600
+              }}>
+                🧬 Perfil: <span style={{
+                  color: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88',
+                  textTransform: 'uppercase',
+                  fontWeight: 800,
+                  letterSpacing: '0.5px'
+                }}>
+                  {genetics === 'indica' ? 'Índica 🏔️' : genetics === 'sativa' ? 'Sativa 🌴' : 'Híbrida'}
+                </span>
               </div>
               
               <div className="mode-selector glass">
@@ -408,16 +465,21 @@ function App() {
                       const difference = leafTempNight - dpNight;
                       
                       let nightRisk = { label: 'SEGURO', color: '#00FF88', desc: 'No hay riesgo de rocío ni picos críticos de humedad. Las hojas permanecerán secas.' };
-                      if (predictedRH >= 85 || difference <= 1.0) {
-                        nightRisk = { label: 'RIESGO DE HONGOS', color: '#FFD600', desc: 'La humedad nocturna será del ' + predictedRH + '%. Riesgo alto de propagación de Oídio.' };
+                      if (predictedRH >= 85 || difference <= 1.5) {
+                        nightRisk = { label: 'RIESGO DE HONGOS', color: '#FFD600', desc: 'La humedad nocturna será del ' + predictedRH + '%. Riesgo alto de propagación de Oídio/Mildiu.' };
                       }
-                      if (predictedRH >= 98 || difference <= 0.1) {
+                      if (predictedRH >= 96 || difference <= 0.3) {
                         nightRisk = { 
                           label: 'PELIGRO DE CONDENSACIÓN', 
                           color: '#FF4D4D', 
-                          desc: 'El aire se saturará. Se formará agua líquida dentro de tus flores al apagar las luces, generando Botrytis.' 
+                          desc: 'El aire se saturará. Se formará agua líquida condensada dentro de tus cogollos al apagar las luces, provocando Botrytis.' 
                         };
                       }
+
+                      // Cálculo de brecha de seguridad para barra de progreso (0°C a 6°C de brecha)
+                      const safetyGapPercent = Math.min(100, Math.max(0, (difference / 6.0) * 100));
+                      const safetyTempMin = dpNight + 1.5;
+                      const tempDeficit = safetyTempMin - tNight;
 
                       return (
                         <div className="module-results glow-border">
@@ -437,6 +499,39 @@ function App() {
                             </div>
                           </div>
 
+                          {/* Barra de Margen Termodinámico */}
+                          <div className="thermo-gap-container" style={{
+                            background: 'rgba(0, 0, 0, 0.4)',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            marginBottom: '20px'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 700 }}>
+                              <span>Punto de Rocío: {dpNight.toFixed(1)}°C</span>
+                              <span>Temp. Hoja: {leafTempNight.toFixed(1)}°C</span>
+                            </div>
+                            <div style={{ 
+                              height: '10px', 
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                              borderRadius: '5px', 
+                              overflow: 'hidden',
+                              display: 'flex'
+                            }}>
+                              <div style={{ 
+                                width: `${safetyGapPercent}%`, 
+                                backgroundColor: nightRisk.color, 
+                                boxShadow: `0 0 10px ${nightRisk.color}`,
+                                borderRadius: '5px',
+                                transition: 'all 0.5s ease-out'
+                              }} />
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Diferencia Térmica: <strong style={{ color: nightRisk.color }}>{difference.toFixed(1)}°C</strong></span>
+                              <span>Objetivo Seguro: <strong>&gt;1.5°C</strong></span>
+                            </div>
+                          </div>
+
                           <div className="night-alarm-card" style={{ backgroundColor: nightRisk.color + '15', border: `1px solid ${nightRisk.color}` }}>
                             <div className="alarm-header" style={{ color: nightRisk.color }}>
                               <AlertTriangle size={20} className={nightRisk.label !== 'SEGURO' ? 'icon-pulse' : ''} />
@@ -444,8 +539,15 @@ function App() {
                             </div>
                             <p>{nightRisk.desc}</p>
                             {nightRisk.label !== 'SEGURO' && (
-                              <div className="pro-advice-tip">
-                                💡 <strong>Sugerencia Técnica:</strong> Programa tu extractor para que funcione al 100% durante los 30 minutos antes y después del apagado de luces para evacuar el aire cargado de humedad, o instala un deshumidificador programado de noche.
+                              <div className="pro-advice-tip" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div>
+                                  💡 <strong>Sugerencia de Ventilación:</strong> Programa tu extractor para que funcione al 100% durante los 30 minutos antes y después del apagado de luces para evacuar el aire cargado de transpiración, o programa un deshumidificador nocturno.
+                                </div>
+                                {tempDeficit > 0 && (
+                                  <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '8px', color: '#FFD600' }}>
+                                    🔥 <strong>Sugerencia de Calefacción:</strong> Para evitar la condensación térmica sin deshumidificador, mantén la temperatura nocturna por encima de <strong>{safetyTempMin.toFixed(1)}°C</strong> (calienta la sala al menos <strong>{tempDeficit.toFixed(1)}°C</strong> de noche).
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -501,6 +603,24 @@ function App() {
                           <span className="range-val">{targets.flower.min.toFixed(1)} - {targets.flower.max.toFixed(1)} kPa</span>
                         </div>
                       </div>
+
+                      <div className="pro-advice-tip" style={{ marginTop: '20px', borderLeftColor: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88' }}>
+                        {genetics === 'indica' && (
+                          <p style={{ margin: 0 }}>
+                            🏔️ <strong>Adaptación Fisiológica Índica:</strong> Originarias de climas secos y montañosos (Hindu Kush). Sus hojas anchas con alta densidad estomática prefieren DPVs más altos (aire seco en floración tardía hasta 1.7 kPa) para aumentar la producción de resina densa y terpenos protectores contra los rayos UV, tolerando humedades relativas más bajas de forma segura.
+                          </p>
+                        )}
+                        {genetics === 'sativa' && (
+                          <p style={{ margin: 0 }}>
+                            🌴 <strong>Adaptación Fisiológica Sativa:</strong> Nativas de selvas ecuatoriales cálidas e hiper-húmedas. Sus folíolos ultra-delgados disipan calor rápidamente y toleran humedades muy altas. Prefieren DPVs más suaves (máximo 1.5 kPa en floración) para evitar el colapso del flujo de transpiración y el desecado radicular acelerado.
+                          </p>
+                        )}
+                        {genetics === 'hybrid' && (
+                          <p style={{ margin: 0 }}>
+                            🧬 <strong>Adaptación Fisiológica Híbrida/Auto:</strong> Cruces optimizados para rendimiento y estabilidad climática en cultivos de interior (indoor). Siguen el perfil estándar de transpiración estomática equilibrada sin inclinarse hacia extremos desérticos o selváticos.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -527,7 +647,7 @@ function App() {
                         <span className="slider-limits">Mín: 1 | Máx: 40</span>
                       </div>
                       <div className="form-group">
-                        <label>Tamaño Promedio de las Macetas (Litros): <strong>{potSize} L</strong></label>
+                        <label>Tamaño de las Macetas (Litros): <strong>{potSize} L</strong></label>
                         <input 
                           type="range" 
                           min="1" 
@@ -539,18 +659,29 @@ function App() {
                         <span className="slider-limits">Mín: 1L | Máx: 50L</span>
                       </div>
                       <div className="form-group">
+                        <label>Sustrato Activo:</label>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                          <button className={`mode-btn ${substrate === 'soil' ? 'active' : ''}`} onClick={() => setSubstrate('soil')} style={{ padding: '6px 10px', fontSize: '0.75rem', flex: 1, whiteSpace: 'nowrap' }}>🟫 Suelo</button>
+                          <button className={`mode-btn ${substrate === 'coco' ? 'active' : ''}`} onClick={() => setSubstrate('coco')} style={{ padding: '6px 10px', fontSize: '0.75rem', flex: 1, whiteSpace: 'nowrap' }}>🥥 Coco</button>
+                          <button className={`mode-btn ${substrate === 'hydro' ? 'active' : ''}`} onClick={() => setSubstrate('hydro')} style={{ padding: '6px 10px', fontSize: '0.75rem', flex: 1, whiteSpace: 'nowrap' }}>🌊 Hidro</button>
+                        </div>
+                      </div>
+                      <div className="form-group">
                         <label>DPV de Referencia: <strong>{vpd.toFixed(2)} kPa</strong></label>
-                        <p className="field-desc">Tomado de la calculadora principal en tiempo real.</p>
+                        <p className="field-desc">Vinculado a la calculadora principal.</p>
                       </div>
                     </div>
 
                     {(() => {
-                      const totalLiters = calculateEvapotranspiration(plantsCount, potSize, vpd);
+                      const stageMultiplier = stage === 'early' ? 0.25 : stage === 'veg' ? 0.75 : 1.20;
+                      const substrateMultiplier = substrate === 'soil' ? 1.0 : substrate === 'coco' ? 1.25 : 1.50;
+                      const totalLiters = calculateEvapotranspiration(plantsCount, potSize, vpd, stageMultiplier, substrateMultiplier);
                       const litersPerPlant = totalLiters / plantsCount;
+                      const frequencyInfo = calculateWateringFrequency(potSize, litersPerPlant, substrate);
 
                       return (
                         <div className="module-results glow-border">
-                          <h4>Consumo de Agua Diario Estimado de tu Cultivo:</h4>
+                          <h4>Consumo de Agua y Frecuencia de Riego Estimada:</h4>
                           <div className="metrics-grid">
                             <div className="metric-box water-bg">
                               <span className="metric-label">Total Sala</span>
@@ -560,19 +691,22 @@ function App() {
                               <span className="metric-label">Por Planta</span>
                               <span className="metric-val">{litersPerPlant.toFixed(2)} L/Día</span>
                             </div>
-                            <div className="metric-box">
-                              <span className="metric-label">Demanda Transpirativa</span>
-                              <span className="metric-val" style={{ color: vpd > 1.2 ? '#FF4D4D' : vpd < 0.6 ? '#00DFFF' : '#00FF88' }}>
-                                {vpd > 1.2 ? 'Alta (Seco)' : vpd < 0.6 ? 'Baja (Muy Húmedo)' : 'Óptima'}
-                              </span>
+                            <div className="metric-box water-bg">
+                              <span className="metric-label">Riego Recomendado</span>
+                              <span className="metric-val" style={{ color: '#00F0FF', fontSize: frequencyInfo.text.length > 15 ? '1.05rem' : '1.25rem' }}>{frequencyInfo.text}</span>
                             </div>
                           </div>
 
-                          <div className="pro-advice-tip water-tip-border">
-                            📢 <strong>Guía de Riego Basada en DPV:</strong><br />
-                            {vpd < 0.6 && "⚠️ DPV MUY BAJO: Tus plantas transpiran muy lento. El sustrato se secará despacio. Riega con volúmenes moderados y espacia más los riegos para evitar asfixia radicular y hongos en las raíces."}
-                            {vpd >= 0.6 && vpd <= 1.2 && "🟢 DPV ÓPTIMO: Las plantas transpiran de forma fluida y sana. Los riegos pueden seguir el patrón estándar, ya que el ciclo húmedo/seco del sustrato se completa de forma natural y óptima."}
-                            {vpd > 1.2 && "⚠️ DPV ALTO: Alta demanda hídrica. Las plantas pierden agua rápidamente para no quemarse. Necesitarás regar con mayor frecuencia o aumentar el volumen de riego diario para evitar marchitamiento por estrés hídrico."}
+                          <div className="pro-advice-tip water-tip-border" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div>
+                              📢 <strong>Fisiología de Riego (Etapa: {targets[stage].name}):</strong><br />
+                              El factor de transpiración está ajustado al <strong>{(stageMultiplier * 100).toFixed(0)}%</strong> por la etapa y al <strong>{(substrateMultiplier * 100).toFixed(0)}%</strong> por el sustrato.
+                            </div>
+                            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '8px' }}>
+                              {vpd < 0.6 && "⚠️ DPV MUY BAJO: Tus plantas transpiran muy lento. El sustrato se secará despacio. Riega con volúmenes moderados y espacia más los riegos para evitar asfixia radicular y pudrición."}
+                              {vpd >= 0.6 && vpd <= 1.2 && "🟢 DPV ÓPTIMO: Las plantas transpiran de forma fluida y sana. Los riegos pueden seguir la frecuencia sugerida de forma natural y segura."}
+                              {vpd > 1.2 && "⚠️ DPV ALTO: Alta demanda hídrica. Las plantas pierden agua rápidamente para no quemarse. Necesitarás regar con mayor frecuencia o aumentar el volumen diario para evitar marchitamiento estresante."}
+                            </div>
                           </div>
                         </div>
                       );
@@ -588,9 +722,9 @@ function App() {
                     </div>
                     <p className="module-desc">Calcula el consumo eléctrico y el costo monetario mensual estimado de tus equipos de climatización (extractores, calefactores o deshumidificadores) utilizados para corregir el DPV.</p>
                     
-                    <div className="module-form-grid">
-                      <div className="form-group">
-                        <label>Costo del kWh (en tu moneda local): <strong>${kwhCost.toFixed(2)}</strong></label>
+                    <div className="module-form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                      <div className="form-group" style={{ maxWidth: '300px', marginBottom: '15px' }}>
+                        <label>Costo del kWh (moneda local): <strong>${kwhCost.toFixed(2)}</strong></label>
                         <input 
                           type="number" 
                           step="0.01" 
@@ -599,41 +733,104 @@ function App() {
                           onChange={(e) => setKwhCost(parseFloat(e.target.value) || 0)} 
                         />
                       </div>
-                      <div className="form-group">
-                        <label>Potencia Eléctrica del Equipo (en Watts): <strong>{deviceWatts} W</strong></label>
-                        <input 
-                          type="range" 
-                          min="10" 
-                          max="2000" 
-                          step="10" 
-                          value={deviceWatts} 
-                          onChange={(e) => setDeviceWatts(parseInt(e.target.value))} 
-                        />
-                        <span className="slider-limits">Clones/LED: 20W | Deshum/Sodio: 1000W+</span>
-                      </div>
-                      <div className="form-group">
-                        <label>Horas de Funcionamiento Diario: <strong>{deviceHours} hs</strong></label>
-                        <input 
-                          type="range" 
-                          min="1" 
-                          max="24" 
-                          step="1" 
-                          value={deviceHours} 
-                          onChange={(e) => setDeviceHours(parseInt(e.target.value))} 
-                        />
-                        <span className="slider-limits">Mín: 1h | Máx: 24h</span>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Equipamiento de tu Sala (Activa los que utilices):</h4>
+                        {(() => {
+                          const deviceLabels = {
+                            humidifier: { name: 'Humidificador 💧', desc: 'Aumenta humedad relativa para bajar el DPV' },
+                            dehumidifier: { name: 'Deshumidificador ❄️', desc: 'Reduce humedad ambiental para subir el DPV' },
+                            extractor: { name: 'Extractor / Turbina 🌪️', desc: 'Evacua calor/humedad de los focos' },
+                            heater: { name: 'Calefactor / Estufa 🔥', desc: 'Calienta de noche para alejar el punto de rocío' },
+                            ac: { name: 'Aire Acondicionado ❄️', desc: 'Climatiza y deshumidifica la sala' }
+                          };
+
+                          return Object.keys(deviceLabels).map(key => (
+                            <div key={key} className="device-row glass" style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '12px',
+                              padding: '16px',
+                              borderRadius: '12px',
+                              border: '1px solid rgba(255, 255, 255, 0.05)',
+                              background: activeDevices[key] ? 'rgba(0, 255, 136, 0.02)' : 'rgba(255, 255, 255, 0.01)',
+                              borderColor: activeDevices[key] ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                              transition: 'all 0.3s'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={activeDevices[key]} 
+                                    onChange={(e) => setActiveDevices({ ...activeDevices, [key]: e.target.checked })} 
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#00FF88' }}
+                                  />
+                                  <div>
+                                    <strong style={{ color: activeDevices[key] ? '#fff' : 'var(--text-secondary)', fontSize: '0.9rem' }}>{deviceLabels[key].name}</strong>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.6 }}>{deviceLabels[key].desc}</div>
+                                  </div>
+                                </div>
+                                {activeDevices[key] && (
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#00FF88', backgroundColor: 'rgba(0, 255, 136, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                                    {((deviceWattsMap[key] * deviceHoursMap[key]) / 1000).toFixed(2)} kWh/Día
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {activeDevices[key] && (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '12px' }}>
+                                  <div className="form-group">
+                                    <label style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+                                      <span>Potencia Watts:</span>
+                                      <strong style={{ color: '#fff' }}>{deviceWattsMap[key]} W</strong>
+                                    </label>
+                                    <input 
+                                      type="range" 
+                                      min="10" 
+                                      max="2500" 
+                                      step="10" 
+                                      value={deviceWattsMap[key]} 
+                                      onChange={(e) => setDeviceWattsMap({ ...deviceWattsMap, [key]: parseInt(e.target.value) || 0 })} 
+                                    />
+                                  </div>
+                                  <div className="form-group">
+                                    <label style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+                                      <span>Uso Diario:</span>
+                                      <strong style={{ color: '#fff' }}>{deviceHoursMap[key]} Horas</strong>
+                                    </label>
+                                    <input 
+                                      type="range" 
+                                      min="1" 
+                                      max="24" 
+                                      step="1" 
+                                      value={deviceHoursMap[key]} 
+                                      onChange={(e) => setDeviceHoursMap({ ...deviceHoursMap, [key]: parseInt(e.target.value) || 0 })} 
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
 
                     {(() => {
-                      const dailyKwh = (deviceWatts * deviceHours) / 1000;
-                      const dailyCost = dailyKwh * kwhCost;
+                      let totalDailyKwh = 0;
+                      Object.keys(activeDevices).forEach(key => {
+                        if (activeDevices[key]) {
+                          totalDailyKwh += (deviceWattsMap[key] * deviceHoursMap[key]) / 1000;
+                        }
+                      });
+
+                      const dailyCost = totalDailyKwh * kwhCost;
                       const monthlyCost = dailyCost * 30;
-                      const co2Footprint = dailyKwh * 0.4 * 30; // 0.4kg CO2 por kWh promedio
+                      const co2Footprint = totalDailyKwh * 0.4 * 30; // 0.4kg CO2 por kWh promedio
+                      const smartSavings = monthlyCost * 0.22; // 22% ahorro estimado por automatizar DPV
 
                       return (
                         <div className="module-results glow-border">
-                          <h4>Consumo y Costo Proyectado del Equipo:</h4>
+                          <h4>Consumo y Costo Eléctrico Total Proyectado:</h4>
                           <div className="metrics-grid">
                             <div className="metric-box cost-bg">
                               <span className="metric-label">Costo Mensual</span>
@@ -641,7 +838,7 @@ function App() {
                             </div>
                             <div className="metric-box cost-bg">
                               <span className="metric-label">Consumo Diario</span>
-                              <span className="metric-val">{dailyKwh.toFixed(2)} kWh</span>
+                              <span className="metric-val">{totalDailyKwh.toFixed(2)} kWh</span>
                             </div>
                             <div className="metric-box">
                               <span className="metric-label">Huella CO2</span>
@@ -649,9 +846,31 @@ function App() {
                             </div>
                           </div>
 
+                          {monthlyCost > 0 && (
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 0, 0, 0.4))',
+                              border: '1px solid rgba(0, 255, 136, 0.3)',
+                              borderRadius: '12px',
+                              padding: '16px',
+                              marginBottom: '20px',
+                              animation: 'pulseGold 3s infinite ease-in-out'
+                            }}>
+                              <div>
+                                <strong style={{ color: '#00FF88', fontSize: '0.9rem', display: 'block' }}>💡 Ahorro Estimado con Automatización Smart:</strong>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Al encender extractores/humidificadores solo cuando el DPV lo demanda.</span>
+                              </div>
+                              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#00FF88', whiteSpace: 'nowrap' }}>
+                                -${smartSavings.toFixed(2)}/Mes
+                              </span>
+                            </div>
+                          )}
+
                           <div className="pro-advice-tip cost-tip-border">
                             💡 <strong>Consejo de Eficiencia Energética:</strong><br />
-                            Ajustar el DPV usando **Modo Smart (Auto)** te permite apagar o reducir la potencia de tus extractores y humidificadores en los momentos óptimos, reduciendo tu consumo eléctrico mensual entre un 15% y un 30%.
+                            Los deshumidificadores y calefactores consumen hasta un 95% más energía que los extractores estándar. Utilizar el <strong>Modo Smart (Auto)</strong> o perfiles genéticos específicos te ayuda a evitar sobre-climatizar la sala al apagar los equipos de alto consumo apenas se estabiliza la transpiración vegetal.
                           </div>
                         </div>
                       );
@@ -665,7 +884,7 @@ function App() {
                       <Sparkles size={24} color="#FFD600" />
                       <h3>Módulo 5: Academia DPV (Trivia Científica de Precisión)</h3>
                     </div>
-                    <p className="module-desc">Ponte a prueba, Maestro de las Sombras. Responde correctamente estas tres preguntas científicas de precisión para demostrar tus conocimientos y desbloquear tu medalla virtual.</p>
+                    <p className="module-desc">Ponte a prueba, Maestro del Vapor. Responde correctamente estas 5 preguntas científicas avanzadas de fisiología vegetal para demostrar tus conocimientos y desbloquear tu medalla virtual permanente de cultivador de élite.</p>
 
                     <div className="quiz-container">
                       {/* Pregunta 1 */}
@@ -673,13 +892,13 @@ function App() {
                         <h5>1. ¿Dónde ocurre de manera fisiológica el DPV real de tu cultivo?</h5>
                         <div className="quiz-options">
                           <button className={`quiz-opt-btn ${quizAnswers.q1 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q1: 'A' })}>
-                            A. En el sensor de humedad que cuelga de la pared.
+                            A. En el sensor de humedad que cuelga en la pared de la sala.
                           </button>
                           <button className={`quiz-opt-btn ${quizAnswers.q1 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q1: 'B' })}>
-                            B. En la superficie de la hoja, regulado por los estomas. (Correcto)
+                            B. En la superficie y cavidad subestomática de la hoja, regulado por los estomas. (Correcto)
                           </button>
                           <button className={`quiz-opt-btn ${quizAnswers.q1 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q1: 'C' })}>
-                            C. Directamente en los focos LED de la sala.
+                            C. Directamente en los diodos de los focos LED de la sala.
                           </button>
                         </div>
                       </div>
@@ -689,13 +908,13 @@ function App() {
                         <h5>2. ¿Qué acción realizan los estomas de las hojas ante un DPV críticamente alto (ej: 2.2 kPa)?</h5>
                         <div className="quiz-options">
                           <button className={`quiz-opt-btn ${quizAnswers.q2 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q2: 'A' })}>
-                            A. Se abren de par en par para liberar la máxima cantidad de agua posible.
+                            A. Se abren al 100% para liberar la máxima cantidad de agua posible y enfriar el aire.
                           </button>
                           <button className={`quiz-opt-btn ${quizAnswers.q2 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q2: 'B' })}>
-                            B. Explotan debido a la presión interna acumulada del agua.
+                            B. Explotan debido a la excesiva tensión superficial interna del agua celular.
                           </button>
                           <button className={`quiz-opt-btn ${quizAnswers.q2 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q2: 'C' })}>
-                            C. Se cierran herméticamente para evitar que la planta muera deshidratada. (Correcto)
+                            C. Se cierran herméticamente para evitar que la planta muera deshidratada (cierre estomático por estrés). (Correcto)
                           </button>
                         </div>
                       </div>
@@ -705,13 +924,45 @@ function App() {
                         <h5>3. ¿Por qué la transición de luces encendidas a apagadas (Lights-Off) es el momento de mayor riesgo de moho?</h5>
                         <div className="quiz-options">
                           <button className={`quiz-opt-btn ${quizAnswers.q3 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q3: 'A' })}>
-                            A. Porque la temperatura de la hoja cae por debajo del punto de rocío y condensa agua. (Correcto)
+                            A. Porque la temperatura del aire cae rápido y las hojas/cogollos descienden por debajo del Punto de Rocío, condensando agua líquida libre. (Correcto)
                           </button>
                           <button className={`quiz-opt-btn ${quizAnswers.q3 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q3: 'B' })}>
-                            B. Porque las plantas necesitan oscuridad absoluta para transpirar a su máximo nivel.
+                            B. Porque las plantas transpiran de forma acelerada durante las primeras horas de oscuridad absoluta.
                           </button>
                           <button className={`quiz-opt-btn ${quizAnswers.q3 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q3: 'C' })}>
-                            C. Porque el DPV del aire se vuelve infinito al apagarse las luces.
+                            C. Porque la presión barométrica de la sala se eleva de golpe al apagarse los focos de cultivo.
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pregunta 4 */}
+                      <div className="quiz-question-box">
+                        <h5>4. ¿Cómo afecta un DPV crónicamente bajo (ej: 0.3 kPa) a la absorción de nutrientes inmóviles como el Calcio (Ca)?</h5>
+                        <div className="quiz-options">
+                          <button className={`quiz-opt-btn ${quizAnswers.q4 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q4: 'A' })}>
+                            A. Incrementa la absorción radicular de Calcio ya que no hay evaporación foliar que frene el flujo.
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q4 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q4: 'B' })}>
+                            B. Detiene el transporte de Calcio hacia los brotes nuevos, causando necrosis apical porque el Calcio se mueve solo de forma pasiva por la corriente de transpiración. (Correcto)
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q4 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q4: 'C' })}>
+                            C. Hace que el Calcio cristalice en las raíces y bloquee la absorción de Nitrógeno y Potasio.
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pregunta 5 */}
+                      <div className="quiz-question-box">
+                        <h5>5. ¿Qué nos indica científicamente un Offset de Hoja positivo (ej: hoja a 26.0°C y aire a 24.0°C)?</h5>
+                        <div className="quiz-options">
+                          <button className={`quiz-opt-btn ${quizAnswers.q5 === 'A' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q5: 'A' })}>
+                            A. Que la planta está en su punto máximo de fotosíntesis y transpiración fluida.
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q5 === 'B' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q5: 'B' })}>
+                            B. Que la planta ha cerrado estomas por estrés térmico, hídrico o radicular, deteniendo la transpiración y acumulando calor bajo la luz. (Correcto)
+                          </button>
+                          <button className={`quiz-opt-btn ${quizAnswers.q5 === 'C' ? 'selected' : ''}`} onClick={() => !quizSubmitted && setQuizAnswers({ ...quizAnswers, q5: 'C' })}>
+                            C. Que el suelo tiene temperaturas óptimas que aceleran el metabolismo respiratorio de las flores.
                           </button>
                         </div>
                       </div>
@@ -720,43 +971,98 @@ function App() {
                         <button 
                           className="quiz-submit-btn" 
                           onClick={() => {
-                            if (!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3) return;
+                            if (!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3 || !quizAnswers.q4 || !quizAnswers.q5) return;
                             let score = 0;
                             if (quizAnswers.q1 === 'B') score++;
                             if (quizAnswers.q2 === 'C') score++;
                             if (quizAnswers.q3 === 'A') score++;
+                            if (quizAnswers.q4 === 'B') score++;
+                            if (quizAnswers.q5 === 'B') score++;
                             setQuizScore(score);
                             setQuizSubmitted(true);
+                            if (score === 5) {
+                              setHasBadge(true);
+                              try {
+                                localStorage.setItem('dpv_pro_badge', 'true');
+                              } catch (e) {}
+                            }
                           }}
-                          disabled={!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3}
+                          disabled={!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3 || !quizAnswers.q4 || !quizAnswers.q5}
                         >
                           Enviar Respuestas e Inspeccionar Resultados
                         </button>
                       ) : (
-                        <div className="quiz-submitted-box glow-border">
-                          {quizScore === 3 ? (
+                        <div className="quiz-submitted-box glow-border" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                          {quizScore === 5 ? (
                             <div className="quiz-success">
                               <span className="medal-emoji">🏆</span>
-                              <h4>¡FELICIDADES MAESTRO DEL DPV!</h4>
-                              <p>Has respondido las 3 preguntas correctamente de manera perfecta. Tu nivel de comprensión fisiológica vegetal es de élite.</p>
-                              <div className="virtual-badge-card">
+                              <h4>¡FELICIDADES MAESTRO SHADOW DEL DPV!</h4>
+                              <p>Has respondido las 5 preguntas correctamente de manera perfecta. Tu comprensión de la física del vapor y la fisiología vegetal está en el percentil superior del cultivo científico.</p>
+                              <div className="virtual-badge-card" style={{ cursor: 'pointer' }} onClick={() => handleCopy('https://dpv-pro.vercel.app', 'badge_link')}>
                                 <strong>🥇 MEDALLA: MAESTRO SHADOW DEL DPV</strong>
                                 <span>DPV PRO ACADEMY &copy; 2026</span>
+                                <span style={{ fontSize: '0.65rem', color: '#00FF88', marginTop: '8px' }}>
+                                  {copiedText === 'badge_link' ? '¡Enlace de la herramienta copiado! 🟢' : '🔗 Haz clic para copiar enlace y compartir logro'}
+                                </span>
                               </div>
                             </div>
                           ) : (
                             <div className="quiz-fail">
-                              <h4>Resultado: {quizScore}/3 correctas</h4>
-                              <p>Tienes potencial de cultivador experto, pero aún quedan algunos conceptos por afinar para no arriesgar tus flores.</p>
+                              <h4>Resultado: {quizScore}/5 correctas</h4>
+                              <p>¡Tienes potencial de cultivador experto! Has acertado varias, pero para desbloquear la prestigiosa Medalla dorada necesitas una calificación perfecta (5/5). Revisa la guía de respuestas abajo e intenta nuevamente.</p>
                               <button className="quiz-reset-btn" onClick={() => {
-                                setQuizAnswers({ q1: '', q2: '', q3: '' });
+                                setQuizAnswers({ q1: '', q2: '', q3: '', q4: '', q5: '' });
                                 setQuizSubmitted(false);
                                 setQuizScore(0);
                               }}>
-                                Intentar Nuevamente la Trivia
+                                Intentar Trivia Nuevamente 🔄
                               </button>
                             </div>
                           )}
+
+                          {/* Hoja de Respuestas Científica */}
+                          <div style={{
+                            textAlign: 'left',
+                            background: 'rgba(0, 0, 0, 0.4)',
+                            padding: '24px',
+                            borderRadius: '16px',
+                            border: '1px solid rgba(255, 255, 255, 0.05)'
+                          }}>
+                            <h4 style={{ fontSize: '0.9rem', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', marginBottom: '15px' }}>📖 Hoja de Respuestas & Explicación Botánica:</h4>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                              <div>
+                                <span style={{ color: quizAnswers.q1 === 'B' ? '#00FF88' : '#FF4D4D', fontWeight: 800 }}>Pregunta 1: {quizAnswers.q1 === 'B' ? 'Correcto (B)' : 'Incorrecto (B)'}</span>
+                                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
+                                  El DPV real ocurre en el mesófilo foliar. La humedad interna de la planta es siempre del 100% (saturación). El DPV es la fuerza secante neta que aspira el agua hacia afuera y depende de la diferencia entre esa presión subestomática de vapor interna y la del ambiente.
+                                </p>
+                              </div>
+                              <div>
+                                <span style={{ color: quizAnswers.q2 === 'C' ? '#00FF88' : '#FF4D4D', fontWeight: 800 }}>Pregunta 2: {quizAnswers.q2 === 'C' ? 'Correcto (C)' : 'Incorrecto (C)'}</span>
+                                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
+                                  Cierre Estomático. Bajo un aire críticamente seco (DPV alto), la planta previene la deshidratación letal cerrando las células oclusivas estomáticas. Esto frena la pérdida de agua, pero también detiene la absorción de CO2, frenando por completo el crecimiento fotosintético.
+                                </p>
+                              </div>
+                              <div>
+                                <span style={{ color: quizAnswers.q3 === 'A' ? '#00FF88' : '#FF4D4D', fontWeight: 800 }}>Pregunta 3: {quizAnswers.q3 === 'A' ? 'Correcto (A)' : 'Incorrecto (A)'}</span>
+                                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
+                                  Punto de Rocío y Condensación. Al apagar luces, la temperatura cae velozmente. Como las hojas y flores densas disipan calor aún más rápido por radiación, se enfrían por debajo del Punto de Rocío del aire húmedo remanente, formando gotas microscópicas internas de agua líquida (Botrytis).
+                                </p>
+                              </div>
+                              <div>
+                                <span style={{ color: quizAnswers.q4 === 'B' ? '#00FF88' : '#FF4D4D', fontWeight: 800 }}>Pregunta 4: {quizAnswers.q4 === 'B' ? 'Correcto (B)' : 'Incorrecto (B)'}</span>
+                                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
+                                  Deficiencias por DPV Bajo. El Calcio es un elemento estructural no móvil. Las raíces no lo bombean activamente; se absorbe pasivamente disuelto en el agua que asciende por capilaridad a través del xilema gracias a la tensión generada por la transpiración. Si el DPV es muy bajo, no hay transpiración y se desata pudrición y necrosis apical foliar.
+                                </p>
+                              </div>
+                              <div>
+                                <span style={{ color: quizAnswers.q5 === 'B' ? '#00FF88' : '#FF4D4D', fontWeight: 800 }}>Pregunta 5: {quizAnswers.q5 === 'B' ? 'Correcto (B)' : 'Incorrecto (B)'}</span>
+                                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
+                                  Falla Transpirativa. Una planta sana evapotranspira agua continuamente, lo que refrigera las hojas por calor latente de evaporación (haciéndolas estar 1.5°C a 3.0°C *por debajo* del aire, offset negativo). Si la hoja está más caliente que el aire, sus "motores" estomáticos están apagados por completo por estrés.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -787,6 +1093,27 @@ function App() {
             <div className="edu-card">
               <h4>3. El Truco Pro</h4>
               <p>Usa un láser IR: Hoja 22°C - Aire 24°C = <strong>Offset de -2°C</strong>.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="education-section glass warning-gradient" style={{ background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.03), rgba(0, 0, 0, 0.4))', borderColor: 'rgba(0, 255, 136, 0.25)' }}>
+          <div className="info-header">
+            <Sparkles size={24} color="#00FF88" className="icon-pulse" />
+            <h3>Guía Científica: El Modo Smart (Auto)</h3>
+          </div>
+          <div className="education-grid">
+            <div className="edu-card">
+              <h4>1. ¿Qué hace bajo el capó?</h4>
+              <p>Fórmula a la inversa. En lugar de estimar el DPV desde tus mediciones manuales, el motor despeja la ecuación fáctica de Magnus-Tetens para calcular el valor exacto de Humedad Relativa a configurar.</p>
+            </div>
+            <div className="edu-card">
+              <h4>2. Fisiología de Objetivos</h4>
+              <p>Cada etapa de crecimiento tiene un objetivo de DPV óptimo central ya establecido: <strong>0.6 kPa</strong> para esquejes, <strong>1.0 kPa</strong> en vegetativo (fotosíntesis explosiva) y <strong>1.4 kPa</strong> en floración (máximo resguardo estomático y prevención de hongos).</p>
+            </div>
+            <div className="edu-card">
+              <h4>3. Automatización Real</h4>
+              <p>El modo Smart te da el número ideal. Si lo aplicas con controladores inteligentes o Home Assistant, tus extractores y humidificadores se autorregulan de forma activa para seguir la curva perfecta en tiempo real.</p>
             </div>
           </div>
         </section>
