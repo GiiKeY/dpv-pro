@@ -69,7 +69,30 @@ function App() {
   const [dryHumidity, setDryHumidity] = useState(60);
   const [dryAirflow, setDryAirflow] = useState('optimal');
   
-  
+  // Estado de Administración Dinámico (v0.9 - Fase 2)
+  const [selectedSensor, setSelectedSensor] = useState('');
+  const [adminConfig, setAdminConfig] = useState({
+    seedBanks: [
+      { id: 'sb_1', archetype: 'hybrid', name: 'Gorilla Glue Shadow 🧬', bank: 'Shadow Seeds', link: 'https://sweetseeds.es/', coupon: 'SHADOWGG' },
+      { id: 'sb_2', archetype: 'indica', name: 'Afghan Mountain 🏔️', bank: 'Kush Genetics', link: 'https://www.barneysfarm.es/', coupon: 'SHADOWKUSH' },
+      { id: 'sb_3', archetype: 'sativa', name: 'Haze Tropical 🌴', bank: 'Ecuatoriana Seeds', link: 'https://royalqueenseeds.es/', coupon: 'SHADOWHAZE' },
+      { id: 'sb_4', archetype: 'ruderalis', name: 'Auto Siberian Thunder ⚡', bank: 'Tundra Breeders', link: 'https://www.fastbudsgene.com/', coupon: 'SHADOWAUTO' }
+    ],
+    fertilizers: {
+      lowEc: { brand: 'Biobizz Organic', product: 'Bio-Grow Booster', advice: 'Sube tu EC agregando 1.5 ml/L de Bio-Grow de forma 100% orgánica.', link: 'https://www.biobizz.com/', coupon: 'BIOBISHADOW' },
+      highEc: { brand: 'Advanced Nutrients', product: 'Sensi Flush Professional', advice: 'Riesgo alto de sobrefertilización. Lava las raíces con Sensi Flush de inmediato.', link: 'https://www.advancednutrients.com/', coupon: 'ADVSHADOW' }
+    },
+    sensorPartners: [
+      { id: 'sensor_1', name: 'Pulse One WiFi Pro', offset: -2.2, link: 'https://pulsegrow.com/', coupon: 'PULSESHADOW' },
+      { id: 'sensor_2', name: 'RuuviTag Pro Sensor', offset: -1.8, link: 'https://ruuvi.com/', coupon: 'RUUVISHADOW' },
+      { id: 'sensor_3', name: 'Inkbird Smart Thermo', offset: -2.0, link: 'https://inkbird.com/', coupon: 'INKSHADOW' }
+    ],
+    growShops: [
+      { id: 'grow_1', name: 'Shadow Grow Shop - Central', address: 'Av. Cabildo 2400, Buenos Aires', phone: '+5491122334455', coupon: 'SHADOWGROW10', link: 'https://wa.me/5491122334455' },
+      { id: 'grow_2', name: 'El Maestro del Vapor', address: 'Calle Gran Vía 45, Madrid', phone: '+34600112233', coupon: 'VAPORMASTER', link: 'https://wa.me/34600112233' },
+      { id: 'grow_3', name: 'Hiper-Hidroponia Chile', address: 'Av. Providencia 1200, Santiago', phone: '+56988776655', coupon: 'HIDROSHADOW', link: 'https://wa.me/56988776655' }
+    ]
+  });
   // Módulo 3: Riego/Evaporación
   const [plantsCount, setPlantsCount] = useState(4);
   const [potSize, setPotSize] = useState(10);
@@ -1009,6 +1032,9 @@ function App() {
                   <button className={`pro-nav-btn ${activeProTool === 'academia' ? 'active' : ''}`} onClick={() => setActiveProTool('academia')}>
                     🎓 Academia DPV
                   </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'directorio' ? 'active' : ''}`} onClick={() => setActiveProTool('directorio')}>
+                    🗺️ Locales Aliados
+                  </button>
                 </nav>
               </aside>
 
@@ -1213,9 +1239,30 @@ function App() {
                         </strong>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kc Base: <strong>{selectedStrain.baseKc}</strong></span>
                       </div>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 15px 0', lineHeight: 1.45 }}>
                         {selectedStrain.desc}
                       </p>
+                      
+                      {/* BANCO DE SEMILLAS PATROCINADO (Dinámico desde adminConfig) */}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '12px' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#00FF88', fontWeight: 'bold', display: 'block', marginBottom: '8px', letterSpacing: '0.5px' }}>
+                          🌱 VARIEDADES COMERCIALES RECOMENDADAS:
+                        </span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                          {adminConfig.seedBanks.filter(sb => sb.archetype === genetics).map(sb => (
+                            <div key={sb.id} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div>
+                                <strong style={{ fontSize: '0.8rem', color: '#fff', display: 'block' }}>{sb.name}</strong>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Banco: <strong>{sb.bank}</strong></span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '6px' }}>
+                                <span style={{ fontSize: '0.65rem', color: '#FFD600' }}>Cupón: <strong>{sb.coupon}</strong></span>
+                                <a href={sb.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: '#00FF88', textDecoration: 'none', fontWeight: 'bold' }}>Ver Genética ↗</a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     {/* SUB-MÓDULO A: ESTIMADOR DE OFFSET TERMODINÁMICO Y CONDUCTANCIA */}
@@ -1258,35 +1305,81 @@ function App() {
                               <option value="high">Flujo Alto / Extractor Máx</option>
                             </select>
                           </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Sensor Clima:</label>
+                            <select value={selectedSensor} onChange={(e) => setSelectedSensor(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px 10px', borderRadius: '8px', fontSize: '0.75rem', marginTop: '4px' }}>
+                              <option value="">-- Autocalibrar Sensor --</option>
+                              {adminConfig.sensorPartners.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
                         {(() => {
                           const estimatedOffset = calculateEstimatedLeafTemp(temp, activeHumidity, lightType, lightDistance, airflowQuality);
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                              <div>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Offset Fisiológico Estimado:</span>
-                                <strong style={{ fontSize: '1rem', color: '#00FF88', marginLeft: '6px' }}>{estimatedOffset.toFixed(1)}°C</strong>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Offset Fisiológico Estimado:</span>
+                                  <strong style={{ fontSize: '1rem', color: '#00FF88', marginLeft: '6px' }}>{estimatedOffset.toFixed(1)}°C</strong>
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    setLeafOffset(parseFloat(estimatedOffset.toFixed(1)));
+                                    handleCopy('', 'offset_injected');
+                                  }}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #00FF88, #00D060)',
+                                    border: 'none',
+                                    color: '#050e05',
+                                    fontWeight: 'bold',
+                                    padding: '8px 14px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {copiedText === 'offset_injected' ? '¡Aplicado con éxito! ✓' : '🌡️ Aplicar Offset a Calculadora'}
+                                </button>
                               </div>
-                              <button 
-                                onClick={() => {
-                                  setLeafOffset(parseFloat(estimatedOffset.toFixed(1)));
-                                  handleCopy('', 'offset_injected');
-                                }}
-                                style={{
-                                  background: 'linear-gradient(135deg, #00FF88, #00D060)',
-                                  border: 'none',
-                                  color: '#050e05',
-                                  fontWeight: 'bold',
-                                  padding: '8px 14px',
-                                  borderRadius: '8px',
-                                  fontSize: '0.75rem',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s'
-                                }}
-                              >
-                                {copiedText === 'offset_injected' ? '¡Aplicado con éxito! ✓' : '🌡️ Aplicar Offset a Calculadora'}
-                              </button>
+                              
+                              {(() => {
+                                if (!selectedSensor) return null;
+                                const sens = adminConfig.sensorPartners.find(s => s.id === selectedSensor);
+                                if (!sens) return null;
+                                return (
+                                  <div style={{ background: 'rgba(0,223,255,0.03)', border: '1px solid rgba(0,223,255,0.1)', padding: '12px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', width: '100%', animation: 'fadeIn 0.3s ease' }}>
+                                    <div>
+                                      <span style={{ fontSize: '0.7rem', color: '#00DFFF', fontWeight: 'bold', display: 'block' }}>📡 CALIBRACIÓN {sens.name.toUpperCase()}:</span>
+                                      <p style={{ margin: '2px 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Offset oficial recomendado: <strong>{sens.offset}°C</strong></p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                      <button 
+                                        onClick={() => {
+                                          setLeafOffset(sens.offset);
+                                          handleCopy('', 'offset_sensor_applied');
+                                        }}
+                                        style={{
+                                          background: 'rgba(0, 223, 255, 0.1)',
+                                          border: '1px solid rgba(0, 223, 255, 0.3)',
+                                          color: '#00DFFF',
+                                          padding: '5px 10px',
+                                          borderRadius: '6px',
+                                          fontSize: '0.7rem',
+                                          cursor: 'pointer',
+                                          fontWeight: 'bold'
+                                        }}
+                                      >
+                                        {copiedText === 'offset_sensor_applied' ? '¡Aplicado! ✓' : 'Ajustar Offset'}
+                                      </button>
+                                      <a href={sens.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: '#FFD600', textDecoration: 'none', fontWeight: 'bold' }}>Comprar Sonda Original (Cupón: {sens.coupon}) ↗</a>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })()}
@@ -1426,10 +1519,33 @@ function App() {
 
                         {(() => {
                           const osmoticData = calculateOsmoticStress(soilEc, vpd, genetics);
+                          const isHigh = soilEc > 1.8;
+                          const fert = isHigh ? adminConfig.fertilizers.highEc : adminConfig.fertilizers.lowEc;
                           return (
-                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
-                              {osmoticData.advice}
-                            </p>
+                            <>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                                {osmoticData.advice}
+                              </p>
+                              
+                              <div style={{ marginTop: '12px', borderTop: '1px dashed rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '0.7rem', color: isHigh ? '#FF4D4D' : '#00FF88', fontWeight: 'bold' }}>
+                                    💡 TRATAMIENTO DE NUTRICIÓN RECOMENDADO:
+                                  </span>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Patrocinado por: <strong>{fert.brand}</strong></span>
+                                </div>
+                                <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                  <div style={{ flex: '1', minWidth: '200px' }}>
+                                    <strong style={{ fontSize: '0.85rem', color: '#fff' }}>{fert.product}</strong>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>{fert.advice}</p>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                    <span style={{ fontSize: '0.65rem', color: '#FFD600' }}>Cupón: <strong>{fert.coupon}</strong></span>
+                                    <a href={fert.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: '#00FF88', textDecoration: 'none', fontWeight: 'bold' }}>Ver Producto ↗</a>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
                           );
                         })()}
                       </div>
@@ -2099,6 +2215,72 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {activeProTool === 'directorio' && (
+                  <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                    <div style={{ marginBottom: '25px' }}>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#00FF88', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🗺️ Directorio de Grow Shops y Locales Aliados
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                        Encuentra los comercios de cultivo más confiables en tu zona, capacitados en el uso científico del DPV, y consigue descuentos exclusivos con tus cupones de cultivador.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                      {adminConfig.growShops.map(gs => (
+                        <div key={gs.id} className="glow-border glass" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(0,255,136,0.1)', background: 'rgba(0,255,136,0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <strong style={{ fontSize: '1rem', color: '#fff' }}>{gs.name}</strong>
+                              <span style={{ fontSize: '0.65rem', background: '#00FF8822', color: '#00FF88', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>SOCIO OFICIAL</span>
+                            </div>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 6px 0' }}>📍 {gs.address}</p>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>📞 Tel: {gs.phone}</span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '12px' }}>
+                            <div>
+                              <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block' }}>CUPÓN DE DESCUENTO:</span>
+                              <strong style={{ fontSize: '0.85rem', color: '#FFD600', letterSpacing: '0.5px' }}>{gs.coupon}</strong>
+                            </div>
+                            <a 
+                              href={gs.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="console-btn-glow"
+                              style={{ 
+                                background: '#00FF88', 
+                                color: '#050805', 
+                                padding: '6px 14px', 
+                                borderRadius: '8px', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 'bold', 
+                                textDecoration: 'none',
+                                textAlign: 'center'
+                              }}
+                            >
+                              WhatsApp 💬
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ 
+                      marginTop: '25px', 
+                      padding: '16px', 
+                      borderRadius: '12px', 
+                      background: 'rgba(255,255,255,0.01)', 
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      lineHeight: '1.4'
+                    }}>
+                      📢 <strong>¿Tienes un Grow Shop o Comercio de Cultivo?</strong> Forma parte de nuestra red de aliados, promociona DPV PRO en tu vidriera física con un código QR exclusivo y capta cientos de clientes científicos locales. Escríbenos a nuestro Instagram oficial para sumarte al mapa.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -2248,8 +2430,42 @@ function App() {
         </div>
       </main>
 
-      <footer>
-        <p>DPV PRO &copy; 2026 - Master Precision Tools</p>
+      <footer style={{
+        marginTop: '60px',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        padding: '40px 20px 20px 20px',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        textAlign: 'center',
+        position: 'relative'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+          <div>
+            <strong style={{ fontSize: '1.25rem', color: '#00FF88', letterSpacing: '2px' }}>DPV <span style={{ color: '#fff' }}>PRO</span></strong>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: '500px', lineHeight: 1.45 }}>
+              Herramienta de precisión para el control y análisis ambiental en cultivos de alta gama. Optimizando el rendimiento vegetal con rigor científico.
+            </p>
+          </div>
+
+          {/* Iconos de Redes Sociales del Proyecto (Hub de Redes v0.9) */}
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', margin: '10px 0' }}>
+            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" title="Siguenos en Instagram" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', textDecoration: 'none' }} className="glow-text-hover">
+              📸 <span style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Instagram</span>
+            </a>
+            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" title="Mira nuestros Tutoriales en Youtube" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', textDecoration: 'none' }} className="glow-text-hover">
+              🎥 <span style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>YouTube</span>
+            </a>
+            <a href="https://telegram.org/" target="_blank" rel="noopener noreferrer" title="Unete a nuestra comunidad de Telegram" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', textDecoration: 'none' }} className="glow-text-hover">
+              💬 <span style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Telegram</span>
+            </a>
+            <a href="https://discord.com/" target="_blank" rel="noopener noreferrer" title="Servidor de Discord Oficial" style={{ color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', textDecoration: 'none' }} className="glow-text-hover">
+              👾 <span style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Discord</span>
+            </a>
+          </div>
+
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.02)', paddingTop: '15px', width: '100%' }}>
+            <p>DPV PRO &copy; 2026 - Master Precision Tools. Todos los derechos reservados.</p>
+          </div>
+        </div>
       </footer>
 
       {/* Modal de Soporte Glassmorphic */}
