@@ -69,8 +69,13 @@ function App() {
   const [dryHumidity, setDryHumidity] = useState(60);
   const [dryAirflow, setDryAirflow] = useState('optimal');
   
-  // Estado de Administración Dinámico (v0.9 - Fase 2)
+  // Estado de Administración Dinámico (v0.9 - Fase 2 & 3)
   const [selectedSensor, setSelectedSensor] = useState('');
+  const [roomWidth, setRoomWidth] = useState(1.2);
+  const [roomLength, setRoomLength] = useState(1.2);
+  const [roomHeight, setRoomHeight] = useState(2.0);
+  const [showLedSavingsModal, setShowLedSavingsModal] = useState(false);
+
   const [adminConfig, setAdminConfig] = useState({
     seedBanks: [
       { id: 'sb_1', archetype: 'hybrid', name: 'Gorilla Glue Shadow 🧬', bank: 'Shadow Seeds', link: 'https://sweetseeds.es/', coupon: 'SHADOWGG' },
@@ -91,8 +96,15 @@ function App() {
       { id: 'grow_1', name: 'Shadow Grow Shop - Central', address: 'Av. Cabildo 2400, Buenos Aires', phone: '+5491122334455', coupon: 'SHADOWGROW10', link: 'https://wa.me/5491122334455' },
       { id: 'grow_2', name: 'El Maestro del Vapor', address: 'Calle Gran Vía 45, Madrid', phone: '+34600112233', coupon: 'VAPORMASTER', link: 'https://wa.me/34600112233' },
       { id: 'grow_3', name: 'Hiper-Hidroponia Chile', address: 'Av. Providencia 1200, Santiago', phone: '+56988776655', coupon: 'HIDROSHADOW', link: 'https://wa.me/56988776655' }
-    ]
+    ],
+    sponsors: {
+      led: { brand: 'Mars Hydro', model: 'FC-3000 Full Spectrum LED', price: 299, link: 'https://www.mars-hydro.com/', coupon: 'LEDSHADOW', savingsPercent: 35 },
+      fungicide: { brand: 'BioGreen Fungi', product: 'Trichoderma Harzianum Pro', link: 'https://biogreen.nl/', coupon: 'SHADOWFUNGI' },
+      ventilation: { brand: 'Garden Highpro', model: 'Proline Extractor Centrífugo 125', link: 'https://www.gardenhighpro.com/', coupon: 'SHADOWAIR' },
+      academy: { name: 'Growers Academy Online', course: 'Máster de Fisiología y Nutrición Vegetal', price: 99, link: 'https://growersacademy.com/', coupon: 'SHADOWACADEMY' }
+    }
   });
+
   // Módulo 3: Riego/Evaporación
   const [plantsCount, setPlantsCount] = useState(4);
   const [potSize, setPotSize] = useState(10);
@@ -609,6 +621,34 @@ function App() {
                   <p>{advice}</p>
                 </div>
               </div>
+
+              {/* Botón de Reporte PDF Imprimible (v0.9 Phase 3) */}
+              <button 
+                onClick={() => window.print()}
+                className="console-btn-glow"
+                style={{
+                  background: 'rgba(0, 240, 255, 0.1)',
+                  border: '1px solid rgba(0, 240, 255, 0.3)',
+                  color: '#00F0FF',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  maxWidth: '280px',
+                  marginTop: '-15px',
+                  marginBottom: '10px',
+                  transition: 'all 0.2s',
+                  zIndex: 10
+                }}
+              >
+                📊 Generar Reporte PDF Imprimible
+              </button>
             </section>
 
             <section className="controls-grid">
@@ -1028,6 +1068,9 @@ function App() {
                   </button>
                   <button className={`pro-nav-btn ${activeProTool === 'costo' ? 'active' : ''}`} onClick={() => setActiveProTool('costo')}>
                     ⚡ Consumo Eléctrico
+                  </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'extraccion' ? 'active' : ''}`} onClick={() => setActiveProTool('extraccion')}>
+                    🌬️ Extracción de Aire
                   </button>
                   <button className={`pro-nav-btn ${activeProTool === 'academia' ? 'active' : ''}`} onClick={() => setActiveProTool('academia')}>
                     🎓 Academia DPV
@@ -1658,6 +1701,48 @@ function App() {
                               {timerDesc}
                             </p>
 
+                            {/* Botón Fungicida Express (v0.9 Phase 3) */}
+                            {sporeTimer < 300 && (
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                background: 'rgba(255, 77, 77, 0.05)',
+                                border: '1px solid rgba(255, 77, 77, 0.15)',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                marginBottom: '12px',
+                                animation: 'pulseGlow 2s infinite ease-in-out',
+                                textAlign: 'left'
+                              }}>
+                                <div style={{ flex: 1 }}>
+                                  <span style={{ fontSize: '0.65rem', color: '#FF4D4D', fontWeight: 'bold', display: 'block' }}>🛡️ PROTECCIÓN SANITARIA EXPRESS:</span>
+                                  <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.fungicide.brand} - {adminConfig.sponsors.fungicide.product}</strong>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
+                                  <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.fungicide.coupon}</strong></span>
+                                  <a 
+                                    href={adminConfig.sponsors.fungicide.link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="console-btn-glow"
+                                    style={{ 
+                                      background: '#FFD600', 
+                                      color: '#050805', 
+                                      padding: '4px 10px', 
+                                      borderRadius: '6px', 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 'bold', 
+                                      textDecoration: 'none',
+                                      marginTop: '2px'
+                                    }}
+                                  >
+                                    Comprar Preventivo ↗
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
                             <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
                               <div style={{
                                 width: `${(sporeTimer / 300) * 100}%`,
@@ -1716,9 +1801,32 @@ function App() {
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Eficiencia de Asimilación Cuántica:</span>
                               <strong style={{ fontSize: '1.25rem', color: colorEff }}>{efficiencyData.efficiency.toFixed(0)}%</strong>
                               {efficiencyData.wastedWattsPercent > 0 && (
-                                <span style={{ fontSize: '0.7rem', color: '#FF4D4D', marginTop: '4px', fontWeight: 'bold' }}>
-                                  💡 Energía Desperdiciada / Calor: {efficiencyData.wastedWattsPercent}%
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                                  <span style={{ fontSize: '0.7rem', color: '#FF4D4D', marginTop: '4px', fontWeight: 'bold' }}>
+                                    💡 Energía Desperdiciada / Calor: {efficiencyData.wastedWattsPercent}%
+                                  </span>
+                                  {efficiencyData.efficiency < 75 && (
+                                    <button 
+                                      onClick={() => setShowLedSavingsModal(true)}
+                                      style={{
+                                        background: 'rgba(255, 77, 77, 0.1)',
+                                        border: '1px solid rgba(255, 77, 77, 0.3)',
+                                        color: '#FF4D4D',
+                                        padding: '4px 10px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.7rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        marginTop: '4px',
+                                        transition: 'all 0.2s',
+                                        width: 'fit-content'
+                                      }}
+                                      className="console-btn-glow"
+                                    >
+                                      ⚡ Calcular Ahorro Lumínico
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           );
@@ -2023,6 +2131,140 @@ function App() {
                   </div>
                 )}
 
+                {activeProTool === 'extraccion' && (
+                  <div className="pro-module-card">
+                    <div className="module-header">
+                      <Compass size={24} color="#00FF88" className="icon-pulse" />
+                      <h3>Módulo Extra: Dimensionador del Caudal de Extracción de Aire</h3>
+                    </div>
+                    <p className="module-desc">Calcula el volumen físico exacto de tu cuarto de cultivo y el caudal de extracción necesario (en m³/h) para renovar el aire completamente cada minuto, mitigando el calor de las luces y evitando focos de humedad estancada.</p>
+                    
+                    <div className="module-form-grid">
+                      <div className="form-group">
+                        <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Ancho del Cuarto:</span>
+                          <strong style={{ color: '#00FF88' }}>{roomWidth.toFixed(2)} m</strong>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0.5" 
+                          max="4.0" 
+                          step="0.1" 
+                          value={roomWidth} 
+                          onChange={(e) => setRoomWidth(parseFloat(e.target.value))} 
+                        />
+                        <span className="slider-limits">Min: 0.5m | Max: 4.0m</span>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Largo del Cuarto:</span>
+                          <strong style={{ color: '#00FF88' }}>{roomLength.toFixed(2)} m</strong>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0.5" 
+                          max="4.0" 
+                          step="0.1" 
+                          value={roomLength} 
+                          onChange={(e) => setRoomLength(parseFloat(e.target.value))} 
+                        />
+                        <span className="slider-limits">Min: 0.5m | Max: 4.0m</span>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Alto del Cuarto:</span>
+                          <strong style={{ color: '#00FF88' }}>{roomHeight.toFixed(2)} m</strong>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="1.0" 
+                          max="3.0" 
+                          step="0.1" 
+                          value={roomHeight} 
+                          onChange={(e) => setRoomHeight(parseFloat(e.target.value))} 
+                        />
+                        <span className="slider-limits">Min: 1.0m | Max: 3.0m</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const volume = roomWidth * roomLength * roomHeight;
+                      const baseRenewalPerHour = 60; // 1 renovación por minuto
+                      const filterLossFactor = 1.2; // 20% pérdida por resistencia de filtro de carbón
+                      const requiredFlow = volume * baseRenewalPerHour * filterLossFactor;
+                      
+                      const extractorSponsor = adminConfig.sponsors.ventilation;
+
+                      return (
+                        <div className="module-results glow-border">
+                          <h4>Cálculo de Flujo e Insumo de Ventilación Requerido:</h4>
+                          <div className="metrics-grid">
+                            <div className="metric-box water-bg">
+                              <span className="metric-label">Volumen del Cuarto</span>
+                              <span className="metric-val">{volume.toFixed(2)} m³</span>
+                            </div>
+                            <div className="metric-box water-bg">
+                              <span className="metric-label">Caudal Requerido</span>
+                              <span className="metric-val" style={{ color: '#00FF88' }}>{requiredFlow.toFixed(0)} m³/h</span>
+                            </div>
+                            <div className="metric-box water-bg">
+                              <span className="metric-label">Ciclo de Renovación</span>
+                              <span className="metric-val" style={{ fontSize: '1.1rem', color: '#00F0FF' }}>1 vez por minuto</span>
+                            </div>
+                          </div>
+
+                          <div className="pro-advice-tip water-tip-border" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div>
+                              🌬️ <strong>¿Por qué es vital renovar el aire?</strong><br />
+                              Las hojas transpiran vapor de agua constantemente, creando una <strong>capa límite de aire húmedo saturado</strong> alrededor de ellas. Si no hay una corriente de aire que desplace esta capa, los estomas se cierran por asfixia local de vapor, deteniendo el DPV real y frenando el crecimiento fotosintético.
+                            </div>
+                            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '8px' }}>
+                              💡 <em>Nota de Filtro de Carbón: El cálculo incluye un multiplicador de resistencia física de <strong>x1.2 (20% de fricción)</strong> para asegurar que tu extractor rinda la potencia indicada incluso teniendo un filtro anti-olor conectado en serie.</em>
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: '20px', borderTop: '1px dashed rgba(255, 255, 255, 0.1)', paddingTop: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#00FF88', fontWeight: 'bold' }}>🌬️ EXTRACTOR RECOMENDADO PARA TU SALA:</span>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Patrocinado por: <strong>{extractorSponsor.brand}</strong></span>
+                            </div>
+                            <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,255,136,0.15)', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                              <div style={{ flex: 1, minWidth: '220px' }}>
+                                <strong style={{ fontSize: '0.9rem', color: '#fff' }}>{extractorSponsor.model}</strong>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                  Motor de alta velocidad centrífugo con dos velocidades conmutables. Ideal para salas de hasta {(requiredFlow * 1.5).toFixed(0)} m³/h de flujo máximo.
+                                </p>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                <span style={{ fontSize: '0.65rem', color: '#FFD600' }}>Cupón: <strong>{extractorSponsor.coupon}</strong></span>
+                                <a 
+                                  href={extractorSponsor.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="console-btn-glow"
+                                  style={{
+                                    background: '#00FF88',
+                                    color: '#050805',
+                                    padding: '6px 14px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    textDecoration: 'none'
+                                  }}
+                                >
+                                  Ver Extractor ↗
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 {activeProTool === 'academia' && (
                   <div className="pro-module-card">
                     <div className="module-header">
@@ -2166,6 +2408,67 @@ function App() {
                               </button>
                             </div>
                           )}
+
+                          {/* Tarjeta de Conversión Cursos Academia (v0.9 Phase 3) */}
+                          <div className="glow-border" style={{
+                            background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.05), rgba(0, 0, 0, 0.6))',
+                            border: '1px solid rgba(255, 214, 0, 0.2)',
+                            padding: '20px',
+                            borderRadius: '14px',
+                            marginTop: '20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            textAlign: 'left'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Award size={20} color="#FFD600" className="icon-pulse" />
+                                <strong style={{ fontSize: '0.95rem', color: '#FFD600', letterSpacing: '0.5px' }}>
+                                  {adminConfig.sponsors.academy.name}
+                                </strong>
+                              </div>
+                              <span style={{ fontSize: '0.65rem', background: '#FFD60022', color: '#FFD600', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>CURSO COMPLEMENTARIO</span>
+                            </div>
+                            
+                            <div>
+                              <h4 style={{ margin: '0 0 6px 0', fontSize: '0.9rem', color: '#fff' }}>
+                                {adminConfig.sponsors.academy.course}
+                              </h4>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                Lleva tus conocimientos botánicos al siguiente nivel profesional. Aprende a fondo sobre transporte xilemático, regulación de auxinas, asimilación cuántica y termodinámica del vapor con los mayores científicos del sector.
+                              </p>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '4px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block' }}>MATRÍCULA CON DESCUENTO:</span>
+                                <strong style={{ fontSize: '0.9rem', color: '#FFD600' }}>
+                                  ${adminConfig.sponsors.academy.price} USD <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>$199 USD</span>
+                                </strong>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.academy.coupon}</strong></span>
+                                <a 
+                                  href={adminConfig.sponsors.academy.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="console-btn-glow"
+                                  style={{
+                                    background: '#FFD600',
+                                    color: '#050805',
+                                    padding: '6px 14px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    textDecoration: 'none'
+                                  }}
+                                >
+                                  Inscribirse Ahora ↗
+                                </a>
+                              </div>
+                            </div>
+                          </div>
 
                           {/* Hoja de Respuestas Científica */}
                           <div style={{
@@ -2555,6 +2858,155 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Modal de Ahorro Lumínico LED (v0.9 Phase 3) */}
+      {showLedSavingsModal && (() => {
+        const gs = calculateStomatalConductance(vpd, lightIntensity, genetics);
+        const efficiencyData = calculatePhotosyntheticEfficiency(gs, ppfdInput);
+        const dailyWastedKwh = (deviceWattsMap.lights * deviceHoursMap.lights / 1000) * (efficiencyData.wastedWattsPercent / 100);
+        const monthlyWastedCash = dailyWastedKwh * 30 * kwhCost;
+        const ledSponsor = adminConfig.sponsors.led;
+
+        return (
+          <div className="modal-overlay" onClick={() => setShowLedSavingsModal(false)}>
+            <div className="modal-content glass glow-border" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', textAlign: 'left' }}>
+              <button className="close-modal-btn" onClick={() => setShowLedSavingsModal(false)}>
+                <X size={20} />
+              </button>
+              
+              <div className="modal-header" style={{ textAlign: 'center' }}>
+                <Zap size={36} color="#FF4D4D" className="icon-pulse" />
+                <h2 className="glow-text" style={{ color: '#FF4D4D' }}>Calculadora de Fuga de Dinero Lumínico</h2>
+                <p>Tu planta está sufriendo estrés y tiene sus estomas cerrados. Está recibiendo luz intensa pero no puede procesarla.</p>
+              </div>
+
+              <div style={{ background: 'rgba(255, 77, 77, 0.05)', border: '1px solid rgba(255, 77, 77, 0.2)', padding: '20px', borderRadius: '14px', marginBottom: '20px', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>PÉRDIDA MENSUAL EFECTIVA</span>
+                <strong style={{ fontSize: '2.5rem', color: '#FF4D4D', textShadow: '0 0 20px rgba(255, 77, 77, 0.3)', fontFamily: 'monospace' }}>
+                  ${monthlyWastedCash.toFixed(2)} <span style={{ fontSize: '1rem' }}>/ Mes</span>
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginTop: '8px' }}>
+                  Calculado sobre {deviceWattsMap.lights}W a {deviceHoursMap.lights}hs diarias (${kwhCost.toFixed(2)}/kWh)
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '20px' }}>
+                <p>
+                  Al tener los estomas cerrados en un <strong>{100 - efficiencyData.efficiency.toFixed(0)}%</strong>, la planta frena la absorción de CO₂. La energía eléctrica consumida por tus focos no se transforma en flores, sino que se disipa como <strong>calor estresante</strong> sobre el follaje.
+                </p>
+                <div style={{ background: 'rgba(0, 255, 136, 0.02)', border: '1px solid rgba(0, 255, 136, 0.1)', padding: '15px', borderRadius: '12px' }}>
+                  <strong style={{ color: '#00FF88', display: 'block', marginBottom: '4px' }}>💡 Solución Inteligente:</strong>
+                  Cambia a un panel LED de alta eficiencia espectral con regulación fina. Te sugerimos el **{ledSponsor.brand} {ledSponsor.model}**. Con tecnología avanzada, reduce el estrés térmico en canopia y permite ahorrar hasta un **{ledSponsor.savingsPercent}%** en la factura eléctrica.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+                <div>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block' }}>CÓDIGO DE DESCUENTO EXCLUSIVO:</span>
+                  <strong style={{ fontSize: '0.9rem', color: '#FFD600', letterSpacing: '0.5px' }}>{ledSponsor.coupon}</strong>
+                </div>
+                <a 
+                  href={ledSponsor.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="console-btn-glow"
+                  style={{ 
+                    background: '#FF4D4D', 
+                    color: '#050805', 
+                    padding: '8px 18px', 
+                    borderRadius: '8px', 
+                    fontSize: '0.8rem', 
+                    fontWeight: 'bold', 
+                    textDecoration: 'none',
+                    textAlign: 'center'
+                  }}
+                >
+                  Ver Mars Hydro ↗
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Printable PDF Report Layout (v0.9 Phase 3) */}
+      <div className="print-report-only">
+        <div style={{ borderBottom: '3px solid #000', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '2rem', margin: 0, color: '#000', fontFamily: 'sans-serif' }}>DPV PRO - Reporte Científico de Cultivo</h1>
+            <span style={{ fontSize: '0.9rem', color: '#555' }}>Herramienta de Diagnológico Fisiológico Vegetal de Precisión</span>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <strong style={{ fontSize: '1.2rem', display: 'block', color: '#000' }}>{adminConfig.growShops[0].name}</strong>
+            <span style={{ fontSize: '0.85rem', color: '#555' }}>Punto Oficial de Calibración DPV</span>
+          </div>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+          <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
+            <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #eee', paddingBottom: '6px', color: '#000' }}>Variables de Sala</h3>
+            <table style={{ width: '100%', fontSize: '0.9rem', color: '#000' }}>
+              <tbody>
+                <tr><td style={{ padding: '4px 0' }}>Etapa de Cultivo:</td><td><strong>{targets[stage].name}</strong></td></tr>
+                <tr><td style={{ padding: '4px 0' }}>Temperatura Aire:</td><td><strong>{temp.toFixed(1)} °C</strong></td></tr>
+                <tr><td style={{ padding: '4px 0' }}>Humedad Relativa:</td><td><strong>{activeHumidity} %</strong></td></tr>
+                <tr><td style={{ padding: '4px 0' }}>Offset de Hoja:</td><td><strong>{leafOffset} °C</strong></td></tr>
+                <tr><td style={{ padding: '4px 0' }}>Genética / Arquetipo:</td><td style={{ textTransform: 'uppercase' }}><strong>{genetics}</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>DÉFICIT DE PRESIÓN DE VAPOR</span>
+            <strong style={{ fontSize: '3.5rem', margin: '5px 0', color: '#000', fontFamily: 'monospace' }}>{vpd.toFixed(2)} kPa</strong>
+            <span style={{ fontSize: '0.9rem', padding: '4px 12px', background: '#eee', borderRadius: '15px', display: 'inline-block', fontWeight: 'bold', color: '#000', border: '1px solid #ccc' }}>{status.label}</span>
+          </div>
+        </div>
+
+        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
+          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #eee', paddingBottom: '6px', color: '#000' }}>Diagnóstico y Sugerencia Fisiológica</h3>
+          <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.45', color: '#000' }}>{advice}</p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+          {/* Transpiración y fotosíntesis */}
+          {(() => {
+            const gs = calculateStomatalConductance(vpd, lightIntensity, genetics);
+            const efficiencyData = calculatePhotosyntheticEfficiency(gs, ppfdInput);
+            const dailyWastedKwh = (deviceWattsMap.lights * deviceHoursMap.lights / 1000) * (efficiencyData.wastedWattsPercent / 100);
+            const monthlyWastedCash = dailyWastedKwh * 30 * kwhCost;
+            const osmoticData = calculateOsmoticStress(soilEc, vpd, genetics);
+
+            return (
+              <>
+                <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', borderBottom: '1px solid #eee', paddingBottom: '4px', color: '#000' }}>Eficiencia Cuántica & Fotosíntesis</h4>
+                  <ul style={{ paddingLeft: '15px', margin: 0, fontSize: '0.85rem', lineHeight: '1.4', color: '#000' }}>
+                    <li style={{ padding: '2px 0' }}>Conductancia Estomática (gs): <strong>{gs.toFixed(0)} mmol/m²/s</strong></li>
+                    <li style={{ padding: '2px 0' }}>Eficiencia de Asimilación: <strong>{efficiencyData.efficiency.toFixed(0)}%</strong></li>
+                    <li style={{ padding: '2px 0' }}>Potencia Lumínica Desperdiciada: <strong>{efficiencyData.wastedWattsPercent}%</strong></li>
+                    {efficiencyData.wastedWattsPercent > 0 && <li style={{ padding: '2px 0', color: '#FF4D4D' }}>Fuga Económica Estimada: <strong>${monthlyWastedCash.toFixed(2)} / Mes</strong></li>}
+                  </ul>
+                </div>
+                <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', borderBottom: '1px solid #eee', paddingBottom: '4px', color: '#000' }}>Nutrición & Osmosis Radicular</h4>
+                  <ul style={{ paddingLeft: '15px', margin: 0, fontSize: '0.85rem', lineHeight: '1.4', color: '#000' }}>
+                    <li style={{ padding: '2px 0' }}>EC del Sustrato / Riego: <strong>{soilEc.toFixed(1)} mS/cm</strong></li>
+                    <li style={{ padding: '2px 0' }}>Potencial Osmótico (Ψ osm): <strong>{osmoticData.osmoticPotential.toFixed(3)} MPa</strong></li>
+                    <li style={{ padding: '2px 0' }}>Índice de Acumulación: <strong>{osmoticData.accumulationIndex.toFixed(0)}%</strong></li>
+                    <li style={{ padding: '2px 0' }}>Estado Fisiológico de Raíz: <strong style={{ textTransform: 'uppercase' }}>{osmoticData.status}</strong></li>
+                  </ul>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+
+        <div style={{ borderTop: '1px solid #ccc', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#555' }}>
+          <p>Reporte oficial emitido por <strong>DPV PRO v0.9</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
+          <p style={{ margin: '4px 0 0 0' }}>Presenta este reporte físico o digital en el local y obtén tu descuento con el cupón: <strong>{adminConfig.growShops[0].coupon}</strong></p>
+        </div>
+      </div>
     </div>
   );
 }

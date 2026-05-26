@@ -1649,5 +1649,63 @@ input[type="range"]::-moz-range-thumb:hover {
   box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
 }
 
+/* --- PRINT MEDIA STYLES (v0.9 Phase 3) --- */
+.print-report-only {
+  display: none;
+}
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+  }
+  
+  /* Hide all interactive components, navigation, buttons, and footers */
+  #root > div:not(.print-report-only),
+  .app-container > *:not(.print-report-only),
+  header,
+  .view-switcher,
+  .stage-selector-container,
+  .mode-selector,
+  .main-display,
+  .controls-grid,
+  .table-view,
+  .pro-tools-view,
+  .education-section,
+  .support-section,
+  .ad-slot-top,
+  .ad-slot-bottom,
+  footer,
+  .modal-overlay {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+  }
+
+  /* Make print-report-only block visible and beautifully formatted */
+  .print-report-only {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print-report-only * {
+    visibility: visible !important;
+    color: #000000 !important;
+    background: transparent !important;
+    border-color: #cccccc !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
 
 
