@@ -203,4 +203,108 @@ export const calculateTranspirationRate = (gs, vpd) => {
   return E;
 };
 
+/**
+ * Estimates the leaf temperature Offset (°C) based on a thermodynamic energy balance.
+ */
+export const calculateEstimatedLeafTemp = (airTemp, humidity, lightType, distance = 50, airflow = 'optimal') => {
+  // Enfriamiento latente por transpiración foliar (alta HR frena la evaporación)
+  const rhFactor = 1 - (humidity / 100);
+  const baseOffset = -3.2 * rhFactor; // Enfriamiento máximo de -3.2°C con aire seco
+  
+  // Calentamiento térmico radiante directo por la lámpara
+  let radiantHeating = 0;
+  if (lightType === 'hps') {
+    radiantHeating = Math.max(0.5, 4.2 * (50 / distance));
+  } else if (lightType === 'led') {
+    radiantHeating = Math.max(0.1, 0.8 * (50 / distance));
+  } else if (lightType === 'sun') {
+    radiantHeating = Math.max(0.3, 2.5 * (50 / distance));
+  }
+  
+  // Factor del movimiento del aire disipando la capa límite térmica
+  let airflowFactor = 1.0;
+  if (airflow === 'low') airflowFactor = 0.6;
+  if (airflow === 'high') airflowFactor = 1.4;
+  
+  const calculatedOffset = (baseOffset + radiantHeating) * airflowFactor;
+  return Math.min(3, Math.max(-5, calculatedOffset));
+};
+
+/**
+ * Calculates the Osmotic Root Stress based on EC, DPV, and genetics.
+ */
+export const calculateOsmoticStress = (ec, vpd, geneticsType) => {
+  const osmoticPotential = -0.036 * ec; // Potencial osmótico en MPa
+  
+  let accumulationMultiplier = 1.0;
+  if (geneticsType === 'sativa') accumulationMultiplier = 1.15;
+  if (geneticsType === 'indica') accumulationMultiplier = 0.85;
+  
+  // Índice de acumulación mineral en las puntas (0 a 100)
+  const accumulationIndex = Math.min(100, Math.max(0, ec * vpd * 35 * accumulationMultiplier));
+  
+  let status = 'safe';
+  let advice = 'Balance óptimo entre absorción de agua y asimilación de nutrientes.';
+  
+  if (accumulationIndex > 75) {
+    status = 'danger';
+    advice = `⚠️ PELIGRO: DPV alto (${vpd.toFixed(2)} kPa) y EC elevada (${ec.toFixed(1)} mS/cm). Evaporación masiva de agua. ¡Diluye el riego con agua pura reduciendo la EC en un 0.4 mS/cm de inmediato para evitar necrosis marginal y puntas quemadas!`;
+  } else if (accumulationIndex > 50) {
+    status = 'warning';
+    advice = `⚠️ PRECAUCIÓN: Zona de acumulación mineral moderada. Reduce levemente la EC en tu próximo riego o eleva la humedad ambiental para suavizar la transpiración foliar.`;
+  } else if (vpd < 0.5) {
+    status = 'warning';
+    advice = `⚠️ BAJO FLUJO: El DPV es críticamente bajo (${vpd.toFixed(2)} kPa). La corriente capilar de agua se ha detenido. Riesgo alto de deficiencias de Calcio y pudriciones apicales. Incrementa la extracción o calienta la sala.`;
+  }
+  
+  return {
+    osmoticPotential,
+    accumulationIndex,
+    status,
+    advice
+  };
+};
+
+/**
+ * Calculates Photosynthetic efficiency and energy wasted based on PPFD and active stomatal conductance.
+ */
+export const calculatePhotosyntheticEfficiency = (gs, ppfd) => {
+  if (ppfd <= 0) {
+    return {
+      efficiency: 0,
+      wastedWattsPercent: 0,
+      status: 'dark',
+      text: 'Foco apagado (Fase oscura). Cero actividad fotosintética vegetal.'
+    };
+  }
+  
+  const gsOptimalRef = 380;
+  const stomatalOpeningRatio = Math.min(1.0, gs / gsOptimalRef);
+  
+  // Eficiencia fotosintética directa
+  let efficiency = stomatalOpeningRatio * 100;
+  let wastedWattsPercent = 0;
+  let status = 'optimal';
+  let text = 'Fotosíntesis fluida: Estomas abiertos absorbiendo CO₂ de forma eficiente y constante.';
+  
+  if (stomatalOpeningRatio < 0.4) {
+    wastedWattsPercent = Math.round((1 - stomatalOpeningRatio) * 80);
+    status = 'danger';
+    text = `⚠️ FOTORRESPIRACIÓN CRÍTICA: Estomas cerrados por estrés. La planta recibe fotones intensos pero no tiene CO₂ para procesar el ciclo de Calvin. ¡Baja la intensidad del panel LED al ${Math.round(stomatalOpeningRatio * 100)}% o estabiliza el DPV de inmediato!`;
+  } else if (stomatalOpeningRatio < 0.75) {
+    wastedWattsPercent = Math.round((1 - stomatalOpeningRatio) * 40);
+    status = 'warning';
+    text = `⚠️ FOTOSÍNTESIS LIMITADA: Estomas parcialmente restringidos. La absorción de CO₂ está ralentizada. Reducir levemente la potencia lumínica te ahorrará energía sin mermar la tasa de crecimiento actual.`;
+  }
+  
+  efficiency = Math.max(10, Math.min(100, efficiency));
+  
+  return {
+    efficiency,
+    wastedWattsPercent,
+    status,
+    text
+  };
+};
+
 

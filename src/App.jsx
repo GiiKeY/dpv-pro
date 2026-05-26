@@ -10,7 +10,10 @@ import {
   calculateEvapotranspiration, 
   calculateWateringFrequency,
   calculateStomatalConductance,
-  calculateTranspirationRate
+  calculateTranspirationRate,
+  calculateEstimatedLeafTemp,
+  calculateOsmoticStress,
+  calculatePhotosyntheticEfficiency
 } from './utils/calculations';
 import { Thermometer, Droplets, Leaf, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award, Activity, Compass, Flame } from 'lucide-react';
 import './App.css';
@@ -42,6 +45,22 @@ function App() {
   // Módulo 2 (Genética Avanzada): PAR y LAI (v0.7)
   const [lightIntensity, setLightIntensity] = useState(600); 
   const [leafAreaIndex, setLeafAreaIndex] = useState(2.0);
+  
+  // Nuevos estados para v0.8
+  const [lightType, setLightType] = useState('led'); // 'led', 'hps', 'sun'
+  const [lightDistance, setLightDistance] = useState(50); // cm
+  const [airflowQuality, setAirflowQuality] = useState('optimal'); // 'low', 'optimal', 'high'
+  const [soilEc, setSoilEc] = useState(1.4); // mS/cm
+  const [ppfdInput, setPpfdInput] = useState(600); // PPFD
+  const [sporeTimer, setSporeTimer] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dpv_pro_spore_timer');
+      return saved ? parseInt(saved) : 300; // 300 minutos = 5 horas
+    } catch (e) {
+      return 300;
+    }
+  });
+  const [consoleModeActive, setConsoleModeActive] = useState(false);
   
   // Módulo 3: Riego/Evaporación
   const [plantsCount, setPlantsCount] = useState(4);
@@ -122,6 +141,57 @@ function App() {
   const tableData = useMemo(() => generateTableData({ min: 15, max: 35 }, leafOffset), [leafOffset]);
   const humidities = Array.from({ length: 21 }, (_, i) => 100 - i * 5);
 
+  // Módulo C (Reloj de Esporas) - Efecto de cuenta regresiva simulada (1 segundo = 1 minuto de reloj)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (vpd < 0.3) {
+        setSporeTimer(prev => {
+          const next = Math.max(0, prev - 1);
+          try {
+            localStorage.setItem('dpv_pro_spore_timer', next.toString());
+          } catch (e) {
+            console.warn("Error saving spore timer:", e);
+          }
+          return next;
+        });
+      } else {
+        setSporeTimer(prev => {
+          const next = Math.min(300, prev + 1);
+          try {
+            localStorage.setItem('dpv_pro_spore_timer', next.toString());
+          } catch (e) {
+            console.warn("Error saving spore timer:", e);
+          }
+          return next;
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [vpd]);
+
+  // Auditoría por voz para el Modo Consola / Quiosco
+  useEffect(() => {
+    if (!consoleModeActive) return;
+    
+    const speak = (message) => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+      }
+    };
+
+    if (vpd < 0.2) {
+      speak("Peligro termodinámico. Riesgo extremo de condensación en tu sala. Sube la temperatura de inmediato.");
+    } else if (vpd > 1.6) {
+      speak("Peligro de estrés hídrico. El aire está críticamente seco para esta genética. Sube la humedad.");
+    } else if (sporeTimer === 0) {
+      speak("Infección de hongos latente. El reloj de germinación ha llegado a cero. Peligro de botrytis.");
+    }
+  }, [vpd, sporeTimer, consoleModeActive]);
+
   const handleCellClick = (t, h) => {
     setTemp(t);
     setHumidity(h);
@@ -194,6 +264,151 @@ function App() {
   }, [vpd, stage, targets, genetics, selectedStrain]);
 
 
+  if (consoleModeActive) {
+    return (
+      <div className="console-mode-screen" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#000000',
+        zIndex: 99999,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        color: '#fff',
+        fontFamily: 'monospace'
+      }}>
+        {/* Glow de estado ambiental de fondo */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: vpd < 0.2 
+            ? 'radial-gradient(circle, rgba(255, 77, 77, 0.12) 0%, rgba(0,0,0,0) 70%)'
+            : vpd > 1.6
+              ? 'radial-gradient(circle, rgba(208, 0, 255, 0.12) 0%, rgba(0,0,0,0) 70%)'
+              : 'radial-gradient(circle, rgba(0, 255, 136, 0.08) 0%, rgba(0,0,0,0) 70%)',
+          pointerEvents: 'none',
+          transition: 'all 1s ease'
+        }} />
+
+        <div style={{ position: 'absolute', top: '20px', display: 'flex', justifyContent: 'space-between', width: '90%', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Activity size={24} color="#00FF88" className="icon-pulse" />
+            <strong style={{ fontSize: '1.2rem', letterSpacing: '2px', color: '#00FF88' }}>DPV CONSOLE <span style={{ color: '#fff', fontSize: '0.8rem', verticalAlign: 'super' }}>v0.8</span></strong>
+          </div>
+          <button 
+            onClick={() => setConsoleModeActive(false)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit'
+            }}
+          >
+            ❌ SALIR DE CONSOLA
+          </button>
+        </div>
+
+        {/* Gran Display de DPV */}
+        <div style={{ textAlign: 'center', margin: '40px 0', zIndex: 1 }}>
+          <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', letterSpacing: '4px', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>
+            DÉFICIT DE PRESIÓN DE VAPOR
+          </span>
+          <div style={{
+            fontSize: 'min(18vw, 150px)',
+            fontWeight: 900,
+            lineHeight: 1,
+            color: status.color,
+            textShadow: `0 0 40px ${status.color}33`,
+            letterSpacing: '-2px',
+            fontFamily: 'sans-serif',
+            transition: 'color 0.4s'
+          }}>
+            {vpd.toFixed(2)} <span style={{ fontSize: 'min(5vw, 40px)', fontWeight: 500 }}>kPa</span>
+          </div>
+          
+          <div style={{
+            display: 'inline-block',
+            marginTop: '20px',
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            color: status.color,
+            backgroundColor: status.color + '22',
+            border: `1px solid ${status.color}55`,
+            padding: '6px 20px',
+            borderRadius: '20px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}>
+            {status.label}
+          </div>
+        </div>
+
+        {/* Métricas secundarias gigantes */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '20px', 
+          width: '90%', 
+          maxWidth: '1000px', 
+          zIndex: 1,
+          marginTop: '20px'
+        }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>TEMP. AIRE</span>
+            <strong style={{ fontSize: '2.2rem', color: '#FF4D4D' }}>{temp.toFixed(1)}°C</strong>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>HUM. RELATIVA</span>
+            <strong style={{ fontSize: '2.2rem', color: '#00FF88' }}>{activeHumidity}%</strong>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>OFFSET HOJA</span>
+            <strong style={{ fontSize: '2.2rem', color: '#A0B0A0' }}>{leafOffset}°C</strong>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '1px', display: 'block' }}>PERFIL ACTIVO</span>
+            <strong style={{ fontSize: '1rem', color: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : genetics === 'ruderalis' ? '#D000FF' : '#00FF88', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '6px' }}>
+              {selectedStrain.name}
+            </strong>
+          </div>
+        </div>
+
+        {/* Barra inferior de estado audible */}
+        <div style={{ 
+          position: 'absolute', 
+          bottom: '30px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          fontSize: '0.8rem', 
+          color: 'var(--text-secondary)',
+          background: 'rgba(255,255,255,0.01)',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          border: '1px solid rgba(255,255,255,0.03)'
+        }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#00FF88', display: 'inline-block', boxShadow: '0 0 8px #00FF88' }} className="icon-pulse" />
+          <span>SISTEMA DE ASISTENCIA POR VOZ ACTIVO (ALERTA AUTOMÁTICA DETECTADA)</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       <header>
@@ -223,6 +438,9 @@ function App() {
         </button>
         <button className={`view-btn ${view === 'pro' ? 'active' : ''}`} onClick={() => setView('pro')}>
           <Zap size={18} /> Herramientas Pro
+        </button>
+        <button className="view-btn console-btn-glow" onClick={() => setConsoleModeActive(true)} style={{ color: '#D000FF', border: '1px solid rgba(208, 0, 255, 0.15)', background: 'rgba(208, 0, 255, 0.02)' }}>
+          <Activity size={18} className="icon-pulse" /> Consola 📺
         </button>
       </nav>
 
@@ -624,8 +842,9 @@ function App() {
                       <Target size={24} color="#00FF88" />
                       <h3>Módulo 2: Configuración Específica por Genética Fisiológica</h3>
                     </div>
-                    <p className="module-desc">Selecciona el arquetipo botánico de tus plantas para adaptar con precisión científica los rangos ideales de DPV, estudiar la dinámica estomática y evaluar vulnerabilidades de cultivo libres de copyright.</p>
+                    <p className="module-desc">Ajusta los parámetros biológicos de tu arquetipo foliar para calibrar la evapotranspiración, conductancia estomática, nutrición osmótica y vulnerabilidades ante patógenos.</p>
                     
+                    {/* Selector de Arquetipo Genético */}
                     <div className="genetics-grid-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                       {BOTANICAL_ARCHETYPES.map((arch) => {
                         const isSelected = activeStrain === arch.id;
@@ -664,7 +883,7 @@ function App() {
                               {arch.type === 'indica' ? 'Clima Seco' : arch.type === 'sativa' ? 'Tropical' : arch.type === 'ruderalis' ? 'Automática' : 'Estándar'}
                             </span>
                             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                              {arch.desc.substring(0, 100)}...
+                              {arch.desc.substring(0, 85)}...
                             </p>
                           </button>
                         );
@@ -690,7 +909,7 @@ function App() {
                       </p>
                     </div>
 
-                    {/* NUEVO MÓDULO A: SIMULADOR DE CONDUCTANCIA ESTOMÁTICA */}
+                    {/* SUB-MÓDULO A: ESTIMADOR DE OFFSET TERMODINÁMICO Y CONDUCTANCIA */}
                     <div className="glow-border" style={{ 
                       padding: '20px', 
                       borderRadius: '16px', 
@@ -701,10 +920,70 @@ function App() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
                         <Activity size={20} color="#00FF88" className="icon-pulse" />
                         <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
-                          Módulo A: Simulador de Conductancia Estomática (g_s) y Tasa de Transpiración
+                          Módulo A: Estimador de Offset de Hoja y Conductancia Estomática
                         </h4>
                       </div>
-                      
+
+                      {/* Estimador de Offset Termodinámico */}
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+                        <h5 style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🌡️ Estimador de Temperatura de Hoja (Reemplazo Láser IR)</h5>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Tipo de Foco:</label>
+                            <select value={lightType} onChange={(e) => setLightType(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px 10px', borderRadius: '8px', fontSize: '0.75rem', marginTop: '4px' }}>
+                              <option value="led">LED Frío (PAR)</option>
+                              <option value="hps">Sodio HPS (Radiante)</option>
+                              <option value="sun">Luz Solar Directa</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Distancia Foco ({lightDistance} cm):</label>
+                            <input type="range" min="20" max="100" step="5" value={lightDistance} onChange={(e) => setLightDistance(parseInt(e.target.value))} style={{ marginTop: '6px' }} />
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Ventilación Sala:</label>
+                            <select value={airflowQuality} onChange={(e) => setAirflowQuality(e.target.value)} style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '6px 10px', borderRadius: '8px', fontSize: '0.75rem', marginTop: '4px' }}>
+                              <option value="low">Flujo Suave / Bajo</option>
+                              <option value="optimal">Flujo Óptimo / Ventilador</option>
+                              <option value="high">Flujo Alto / Extractor Máx</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {(() => {
+                          const estimatedOffset = calculateEstimatedLeafTemp(temp, activeHumidity, lightType, lightDistance, airflowQuality);
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Offset Fisiológico Estimado:</span>
+                                <strong style={{ fontSize: '1rem', color: '#00FF88', marginLeft: '6px' }}>{estimatedOffset.toFixed(1)}°C</strong>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  setLeafOffset(parseFloat(estimatedOffset.toFixed(1)));
+                                  handleCopy('', 'offset_injected');
+                                }}
+                                style={{
+                                  background: 'linear-gradient(135deg, #00FF88, #00D060)',
+                                  border: 'none',
+                                  color: '#050e05',
+                                  fontWeight: 'bold',
+                                  padding: '8px 14px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                              >
+                                {copiedText === 'offset_injected' ? '¡Aplicado con éxito! ✓' : '🌡️ Aplicar Offset a Calculadora'}
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Simulador de Conductancia y Transpiración */}
                       <div className="module-form-grid" style={{ marginBottom: '15px' }}>
                         <div className="form-group">
                           <label style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -723,7 +1002,7 @@ function App() {
                         </div>
                         
                         <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Parámetros Fisiológicos para {selectedStrain.name}:</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Parámetros Fisiológicos Activos:</span>
                           <div style={{ display: 'flex', gap: '15px', marginTop: '6px', fontSize: '0.75rem' }}>
                             <span>Densidad: <strong>{selectedStrain.stomatalDensity} estomas/mm²</strong></span>
                             <span>g_max: <strong>{selectedStrain.maxConductance} mmol/m²/s</strong></span>
@@ -782,7 +1061,7 @@ function App() {
                       })()}
                     </div>
 
-                    {/* NUEVO MÓDULO B: ÍNDICE DE ÁREA FOLIAR (LAI) */}
+                    {/* SUB-MÓDULO B: PRESIÓN OSMÓTICA RADICULAR E ÍNDICE LAI */}
                     <div className="glow-border" style={{ 
                       padding: '20px', 
                       borderRadius: '16px', 
@@ -793,10 +1072,60 @@ function App() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
                         <Leaf size={20} color="#00F0FF" />
                         <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
-                          Módulo B: Índice de Área Foliar (LAI) y Sombreado de Canopia
+                          Módulo B: Presión Osmótica Radicular e Índice LAI
                         </h4>
                       </div>
 
+                      {/* Entrada de EC de Nutrientes */}
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+                        <h5 style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🔬 Simulación de Absorción Mineral y Osmosis</h5>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>EC del Agua de Riego:</span>
+                              <strong style={{ color: '#fff' }}>{soilEc.toFixed(1)} mS/cm</strong>
+                            </label>
+                            <input 
+                              type="range" 
+                              min="0.1" 
+                              max="3.0" 
+                              step="0.1" 
+                              value={soilEc} 
+                              onChange={(e) => setSoilEc(parseFloat(e.target.value))} 
+                            />
+                            <span className="slider-limits">Clones: 0.8 | Floración: 1.6 - 2.2</span>
+                          </div>
+                          
+                          {(() => {
+                            const osmoticData = calculateOsmoticStress(soilEc, vpd, genetics);
+                            let colorEc = '#00FF88';
+                            if (osmoticData.status === 'warning') colorEc = '#FFD600';
+                            if (osmoticData.status === 'danger') colorEc = '#FF4D4D';
+                            
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Potencial Osmótico de Raíz ($\Psi_{osm}$):</span>
+                                <strong style={{ fontSize: '1rem', color: '#00F0FF', marginTop: '2px' }}>{osmoticData.osmoticPotential.toFixed(3)} MPa</strong>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                  Índice de Acumulación: <strong style={{ color: colorEc }}>{osmoticData.accumulationIndex.toFixed(0)}%</strong>
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {(() => {
+                          const osmoticData = calculateOsmoticStress(soilEc, vpd, genetics);
+                          return (
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                              {osmoticData.advice}
+                            </p>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Deslizador del Índice LAI */}
                       <div className="module-form-grid" style={{ gridTemplateColumns: '1fr' }}>
                         <div className="form-group" style={{ maxWidth: '400px' }}>
                           <label style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -829,7 +1158,96 @@ function App() {
                       </div>
                     </div>
 
-                    {/* NUEVO MÓDULO C: SEMÁFORO BIOLÓGICO INTERACTIVO */}
+                    {/* SUB-MÓDULO C: RELOJ DE PRESIÓN DE ESPORAS (GERMINACIÓN) */}
+                    <div className="glow-border" style={{ 
+                      padding: '20px', 
+                      borderRadius: '16px', 
+                      background: 'rgba(0, 0, 0, 0.2)', 
+                      borderLeft: '4px solid #FFD600',
+                      marginBottom: '25px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                        <Compass size={20} color="#FFD600" />
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
+                          Módulo C: Reloj de Presión de Esporas y Germinación de Patógenos
+                        </h4>
+                      </div>
+
+                      {(() => {
+                        const hours = Math.floor(sporeTimer / 60);
+                        const mins = sporeTimer % 60;
+                        const formattedTime = `${hours.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m`;
+                        
+                        let timerColor = '#00FF88';
+                        let timerLabel = 'SEGURO (Sin Condensación)';
+                        let timerDesc = 'Las hojas y cogollos están secos. No hay peligro de germinación fúngica activa.';
+                        
+                        if (vpd < 0.3) {
+                          if (sporeTimer > 180) {
+                            timerColor = '#00FF88';
+                            timerLabel = 'HIDRATACIÓN INICIAL (Fase 1)';
+                            timerDesc = 'Punto de rocío cruzado. Humedad microscópica condensándose sobre la espora. Corrige el clima antes de que inicie la activación celular.';
+                          } else if (sporeTimer > 0) {
+                            timerColor = '#FFD600';
+                            timerLabel = 'ACTIVACIÓN DE ESPORAS (Fase 2)';
+                            timerDesc = `Esporas absorbiendo agua continuamente. Activación biológica al ${Math.round((300 - sporeTimer)/3)}%. Enciende extractores al 100% de inmediato.`;
+                          } else {
+                            timerColor = '#FF4D4D';
+                            timerLabel = 'GERMINACIÓN COMPLETADA (Fase 3)';
+                            timerDesc = 'Infección latente probable. El hongo ha roto la cutícula vegetal y penetrado el cogollo. Monitorea brotes y ventila al extremo.';
+                          }
+                        } else {
+                          if (sporeTimer < 300) {
+                            timerColor = '#00F0FF';
+                            timerLabel = 'SECADO DE HOJAS / EVAPORACIÓN';
+                            timerDesc = 'El DPV ha vuelto a zona segura. Las gotas se están secando lentamente, reduciendo el riesgo progresivamente.';
+                          }
+                        }
+
+                        return (
+                          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>ESTADO SANITARIO:</span>
+                                <strong style={{ fontSize: '1rem', color: timerColor, textTransform: 'uppercase' }}>{timerLabel}</strong>
+                              </div>
+                              
+                              {/* Cronómetro digital neón */}
+                              <div style={{
+                                background: 'rgba(0,0,0,0.6)',
+                                border: `1px solid ${timerColor}55`,
+                                boxShadow: `0 0 10px ${timerColor}22`,
+                                padding: '8px 16px',
+                                borderRadius: '10px',
+                                fontFamily: 'monospace',
+                                fontSize: '1.25rem',
+                                color: timerColor,
+                                fontWeight: 'bold',
+                                letterSpacing: '1px'
+                              }}>
+                                ⏱️ {formattedTime}
+                              </div>
+                            </div>
+
+                            <p style={{ margin: '0 0 12px 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                              {timerDesc}
+                            </p>
+
+                            <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{
+                                width: `${(sporeTimer / 300) * 100}%`,
+                                height: '100%',
+                                backgroundColor: timerColor,
+                                boxShadow: `0 0 8px ${timerColor}`,
+                                transition: 'all 1s linear'
+                              }} />
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* SUB-MÓDULO D: OPTIMIZADOR DE EFICIENCIA LUMÍNICA (PPFD VS DPV) */}
                     <div className="glow-border" style={{ 
                       padding: '20px', 
                       borderRadius: '16px', 
@@ -838,133 +1256,64 @@ function App() {
                       marginBottom: '25px'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                        <Flame size={20} color="#FF4D4D" className="icon-pulse" />
+                        <Zap size={20} color="#FF4D4D" className="icon-pulse" />
                         <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', letterSpacing: '0.5px' }}>
-                          Módulo C: Semáforo de Riesgo Biológico Específico de {selectedStrain.name}
+                          Módulo D: Optimizador de Eficiencia Lumínica (DLI / PPFD vs DPV)
                         </h4>
                       </div>
 
+                      <div className="module-form-grid" style={{ marginBottom: '15px' }}>
+                        <div className="form-group">
+                          <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Intensidad de Foco PPFD:</span>
+                            <strong style={{ color: '#fff' }}>{ppfdInput} µmol/m²/s</strong>
+                          </label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="1500" 
+                            step="50" 
+                            value={ppfdInput} 
+                            onChange={(e) => setPpfdInput(parseInt(e.target.value))} 
+                          />
+                          <span className="slider-limits">Vegetativo: 400 - 600 | Floración LED: 800 - 1000+</span>
+                        </div>
+                        
+                        {(() => {
+                          const gs = calculateStomatalConductance(vpd, lightIntensity, genetics);
+                          const efficiencyData = calculatePhotosyntheticEfficiency(gs, ppfdInput);
+                          let colorEff = '#00FF88';
+                          if (efficiencyData.status === 'warning') colorEff = '#FFD600';
+                          if (efficiencyData.status === 'danger') colorEff = '#FF4D4D';
+                          
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Eficiencia de Asimilación Cuántica:</span>
+                              <strong style={{ fontSize: '1.25rem', color: colorEff }}>{efficiencyData.efficiency.toFixed(0)}%</strong>
+                              {efficiencyData.wastedWattsPercent > 0 && (
+                                <span style={{ fontSize: '0.7rem', color: '#FF4D4D', marginTop: '4px', fontWeight: 'bold' }}>
+                                  💡 Energía Desperdiciada / Calor: {efficiencyData.wastedWattsPercent}%
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+
                       {(() => {
-                        let fungiRisk = { label: 'Bajo', color: '#00FF88', desc: 'Ambiente seguro para los cogollos.' };
-                        let stressRisk = { label: 'Bajo', color: '#00FF88', desc: 'Transpiración estomática fluida.' };
-
-                        // Lógica de Riesgos Biológicos dinámicos
-                        // 1. Riesgo de Hongos (Botrytis/Oidio) por DPV bajo
-                        if (vpd < 0.8) {
-                          if (genetics === 'indica') {
-                            fungiRisk = { 
-                              label: 'ALTO (Sensibilidad Índica)', 
-                              color: '#FFD600', 
-                              desc: 'El DPV es muy bajo. Las Índicas tienen flores ultra-densas y cerradas que atrapan micro-humedad interna con extrema facilidad.' 
-                            };
-                            if (vpd < 0.5) {
-                              fungiRisk = { 
-                                label: 'CRÍTICO (Botrytis / Oídio)', 
-                                color: '#FF4D4D', 
-                                desc: 'Peligro inmediato. Humedad estancada dentro del cogollo. Es indispensable encarecidamente aumentar la ventilación interna.' 
-                              };
-                            }
-                          } else if (genetics === 'sativa') {
-                            fungiRisk = { 
-                              label: 'Moderado-Bajo (Hojas Tropicales)', 
-                              color: '#00FF88', 
-                              desc: 'Estructura aireada y espigada. Mayor resistencia natural al estancamiento de vapor en floración.' 
-                            };
-                            if (vpd < 0.4) {
-                              fungiRisk = { 
-                                label: 'Moderado', 
-                                color: '#FFD600', 
-                                desc: 'DPV sumamente bajo. Estancamiento de flujo de savia, riesgo leve de Oídio en hojas bajas.' 
-                              };
-                            }
-                          } else {
-                            fungiRisk = { 
-                              label: 'Moderado', 
-                              color: '#FFD600', 
-                              desc: 'Monitorear puntas altas. Humedad general por encima de lo deseado para una floración segura.' 
-                            };
-                            if (vpd < 0.4) {
-                              fungiRisk = { 
-                                label: 'Alto', 
-                                color: '#FF4D4D', 
-                                desc: 'Fuerte riesgo de formación de hongos patógenos.' 
-                              };
-                            }
-                          }
-                        }
-
-                        // 2. Riesgo de Cierre Estomático por DPV Alto
-                        if (vpd > 1.4) {
-                          if (genetics === 'sativa') {
-                            stressRisk = { 
-                              label: 'ALTO (Sensibilidad Sativa)', 
-                              color: '#FFD600', 
-                              desc: 'Las Sativas tropicales poseen folíolos delgados con alta conductancia que cierran estomas rápidamente para evitar embolias en el tallo si el aire se seca.' 
-                            };
-                            if (vpd > 1.6) {
-                              stressRisk = { 
-                                label: 'CRÍTICO (Estrés Hídrico)', 
-                                color: '#FF4D4D', 
-                                desc: 'Estomas completamente clausurados. La fotosíntesis se ha detenido. Hojas susceptibles a quemaduras térmicas bajo luz intensa.' 
-                              };
-                            }
-                          } else if (genetics === 'indica') {
-                            stressRisk = { 
-                              label: 'Bajo-Tolerante (Origen Seco)', 
-                              color: '#00FF88', 
-                              desc: 'Genética adaptada a estepas áridas. Tolera DPVs altos y aire seco promoviendo una producción densa de resina.' 
-                            };
-                            if (vpd > 1.7) {
-                              stressRisk = { 
-                                label: 'Moderado', 
-                                color: '#FFD600', 
-                                desc: 'Comienzo de fatiga estomática. Aumentar ligeramente la humedad relativa de la sala.' 
-                              };
-                            }
-                          } else {
-                            stressRisk = { 
-                              label: 'Moderado', 
-                              color: '#FFD600', 
-                              desc: 'El DPV elevado estimula un secado rápido del sustrato. Asegurar riegos constantes.' 
-                            };
-                            if (vpd > 1.6) {
-                              stressRisk = { 
-                                label: 'Alto (Cierre Estomático)', 
-                                color: '#FF4D4D', 
-                                desc: 'Estrés por calor seco. Planta a la defensiva hídrica.' 
-                              };
-                            }
-                          }
-                        }
-
+                        const gs = calculateStomatalConductance(vpd, lightIntensity, genetics);
+                        const efficiencyData = calculatePhotosyntheticEfficiency(gs, ppfdInput);
                         return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
-                              <div style={{ background: fungiRisk.color + '0a', border: `1px solid ${fungiRisk.color}33`, padding: '15px', borderRadius: '12px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, color: fungiRisk.color, marginBottom: '6px' }}>
-                                  <span>Riesgo de Hongos (Botrytis)</span>
-                                  <span>{fungiRisk.label}</span>
-                                </div>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>{fungiRisk.desc}</p>
-                              </div>
-                              <div style={{ background: stressRisk.color + '0a', border: `1px solid ${stressRisk.color}33`, padding: '15px', borderRadius: '12px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, color: stressRisk.color, marginBottom: '6px' }}>
-                                  <span>Estrés Estomático por DPV Seco</span>
-                                  <span>{stressRisk.label}</span>
-                                </div>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>{stressRisk.desc}</p>
-                              </div>
-                            </div>
-                            
-                            <div className="pro-advice-tip" style={{ marginTop: '5px', borderLeftColor: genetics === 'indica' ? '#FF4D4D' : genetics === 'sativa' ? '#00DFFF' : '#00FF88' }}>
-                              🧬 <strong>Fisiología de Adaptación Genética:</strong><br />
-                              Al cultivar <strong>{selectedStrain.name}</strong>, el DPV ideal recomendado para fotosíntesis óptima en la fase de {targets[stage].name} es de <strong>{targets[stage].min} - {targets[stage].max} kPa</strong>. Asegúrate de regular tus ventiladores y extractores para seguir este rango personalizado.
-                            </div>
+                          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                              {efficiencyData.text}
+                            </p>
                           </div>
                         );
                       })()}
                     </div>
 
+                    {/* RANGOS DE DPV OPTIMIZADOS APLICADOS */}
                     <div className="genetics-applied-targets glow-border">
                       <h4>Rangos de DPV Optimizados para <span className="highlight" style={{ textTransform: 'uppercase' }}>{selectedStrain.name}</span>:</h4>
                       <p className="applied-label-notice">✅ Aplicados reactivamente en tu calculadora principal y tabla de datos completa.</p>
@@ -1529,6 +1878,31 @@ function App() {
             <div className="edu-card pest-card wet-risk">
               <h4>❄️ DPV Bajo (Humedad Fría)</h4>
               <p>La transpiración se detiene por completo. El ambiente excesivamente húmedo y frío es el caldo de cultivo ideal para esporas de <strong>Oídio y Botrytis</strong>.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="education-section glass" style={{ background: 'linear-gradient(135deg, rgba(0, 240, 255, 0.03), rgba(0, 0, 0, 0.4))', borderColor: 'rgba(0, 240, 255, 0.25)' }}>
+          <div className="info-header">
+            <Activity size={24} color="#00F0FF" className="icon-pulse" />
+            <h3>Guía Científica: Simuladores Biofísicos Avanzados (v0.8)</h3>
+          </div>
+          <div className="education-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+            <div className="edu-card">
+              <h4>🔬 Osmosis y Succión de Nutrientes</h4>
+              <p>La absorción mineral no es solo cuestión de EC. El DPV actúa como la bomba de succión pasiva de la planta. Si el DPV es muy alto, la planta absorbe agua aceleradamente y acumula sales en la raíz (necrosis o "puntas quemadas"). Si el DPV es muy bajo, la corriente se detiene, causando deficiencias estructurales de Calcio y Magnesio aunque midas bien tu EC/pH.</p>
+            </div>
+            <div className="edu-card">
+              <h4>🌡️ Estimación Térmica (Láser IR)</h4>
+              <p>El balance convectivo calcula la temperatura real de las hojas sin termómetro láser. Las luminarias LED emiten poco calor infrarrojo radiante directo, haciendo que las hojas transpiren y se enfríen hasta 3°C por debajo del aire. El Sodio (HPS) emite radiación infrarroja masiva directa que calienta las hojas hasta 1.5°C por encima del ambiente.</p>
+            </div>
+            <div className="edu-card">
+              <h4>⏱️ Reloj de Presión de Esporas</h4>
+              <p>Los patógenos fúngicos (Oídio, Botrytis) no atacan al azar. Requieren una película microscópica de agua condensada continua durante 4 a 6 horas sobre la cutícula vegetal. El reloj calcula este período en tiempo real cuando entras a la zona de rocío (DPV &lt; 0.3 kPa), permitiendo actuar antes de que la espora complete su germinación celular.</p>
+            </div>
+            <div className="edu-card">
+              <h4>💡 Eficiencia Cuántica (PPFD)</h4>
+              <p>La fotosíntesis efectiva requiere que los estomas estén abiertos para absorber CO₂. Si el DPV es seco o estresante, los estomas se cierran para no deshidratarse. Enviar luz intensa (PPFD elevado) a una canopia con estomas cerrados provoca fotorrespiración, quemaduras tisulares y un desperdicio absoluto de energía eléctrica. ¡Alinea siempre tu Dimer al DPV!</p>
             </div>
           </div>
         </section>
