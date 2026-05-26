@@ -875,14 +875,57 @@ footer {
   to { transform: scale(1); opacity: 1; }
 }
 
+@media (max-width: 768px) {
+  .view-switcher {
+    flex-wrap: wrap !important;
+    border-radius: 16px !important;
+    gap: 6px !important;
+    padding: 6px !important;
+  }
+  
+  .view-btn {
+    padding: 8px 12px !important;
+    font-size: 0.75rem !important;
+    flex: 1 1 calc(50% - 6px) !important; /* 2 items per row */
+    justify-content: center !important;
+    border-radius: 12px !important;
+  }
+  
+  .view-switcher button.console-btn-glow {
+    flex: 1 1 100% !important; /* Console takes a full row */
+  }
+
+  .main-display-content {
+    flex-direction: column !important;
+    gap: 25px !important;
+  }
+  
+  .vpd-value {
+    font-size: min(15vw, 6.5rem) !important;
+  }
+  
+  .stoma-visualizer {
+    width: 100% !important;
+  }
+  
+  .stoma-svg-wrapper {
+    width: 100% !important;
+    max-width: 280px !important;
+  }
+}
+
 @media (max-width: 600px) {
-  .vpd-value { font-size: 5.5rem; }
+  .vpd-value { font-size: 4.5rem !important; }
   .advice-box { flex-direction: column; text-align: center; }
   .support-section { flex-direction: column; }
   .app-container { padding: 20px 12px; }
   .modal-content { padding: 30px 20px; }
   .modal-header h2 { font-size: 1.8rem; }
+  .controls-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
+
 
 /* ===================================================
    V0.6 HERRAMIENTAS PRO MODULARES STYLES
@@ -1705,7 +1748,76 @@ input[type="range"]::-moz-range-thumb:hover {
     box-shadow: none !important;
     text-shadow: none !important;
   }
+
+  .badge-audit-set {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border: 1px solid #c3e6cb !important;
+  }
+
+  .badge-audit-unset {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    border: 1px solid #f5c6cb !important;
+  }
+
+  .audit-alert-card.set {
+    background-color: #e2f0d9 !important;
+    color: #385723 !important;
+    border: 1px solid #c3e6cb !important;
+  }
+
+  .audit-alert-card.unset {
+    background-color: #fce4d6 !important;
+    color: #c65911 !important;
+    border: 1px solid #f5c6cb !important;
+  }
 }
+
+/* --- ESTILOS DE AUDITORÍA Y SEMÁFOROS EN PANTALLA --- */
+.badge-audit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.badge-audit-set {
+  background-color: #d4edda !important;
+  color: #155724 !important;
+  border: 1px solid #c3e6cb !important;
+}
+
+.badge-audit-unset {
+  background-color: #f8d7da !important;
+  color: #721c24 !important;
+  border: 1px solid #f5c6cb !important;
+}
+
+.audit-alert-card {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.audit-alert-card.set {
+  background-color: rgba(212, 237, 218, 0.05);
+  color: #c3e6cb;
+  border: 1px solid rgba(195, 230, 203, 0.2);
+}
+
+.audit-alert-card.unset {
+  background-color: rgba(248, 215, 218, 0.05);
+  color: #f5c6cb;
+  border: 1px solid rgba(245, 198, 203, 0.2);
+}
+
 
 
 

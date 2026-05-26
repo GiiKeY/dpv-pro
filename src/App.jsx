@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   calculateVPD, 
   getVPDStatus, 
@@ -75,6 +75,7 @@ function App() {
   const [roomLength, setRoomLength] = useState(1.2);
   const [roomHeight, setRoomHeight] = useState(2.0);
   const [showLedSavingsModal, setShowLedSavingsModal] = useState(false);
+  const lastSpokenAlertRef = useRef('');
 
   const [adminConfig, setAdminConfig] = useState({
     seedBanks: [
@@ -212,26 +213,33 @@ function App() {
     return () => clearInterval(timer);
   }, [vpd]);
 
-  // Auditoría por voz para el Modo Consola / Quiosco
+  // Auditoría por voz para el Modo Consola / Quiosco (FIX v1.0)
   useEffect(() => {
-    if (!consoleModeActive) return;
+    if (!consoleModeActive) {
+      lastSpokenAlertRef.current = '';
+      return;
+    }
     
-    const speak = (message) => {
+    const speak = (message, alertKey) => {
+      if (lastSpokenAlertRef.current === alertKey) return;
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(message);
         utterance.lang = 'es-ES';
         utterance.rate = 0.95;
+        lastSpokenAlertRef.current = alertKey;
         window.speechSynthesis.speak(utterance);
       }
     };
 
     if (vpd < 0.2) {
-      speak("Peligro termodinámico. Riesgo extremo de condensación en tu sala. Sube la temperatura de inmediato.");
+      speak("Peligro termodinámico. Riesgo extremo de condensación en tu sala. Sube la temperatura de inmediato.", 'dewpoint');
     } else if (vpd > 1.6) {
-      speak("Peligro de estrés hídrico. El aire está críticamente seco para esta genética. Sube la humedad.");
+      speak("Peligro de estrés hídrico. El aire está críticamente seco para esta genética. Sube la humedad.", 'dry');
     } else if (sporeTimer === 0) {
-      speak("Infección de hongos latente. El reloj de germinación ha llegado a cero. Peligro de botrytis.");
+      speak("Infección de hongos latente. El reloj de germinación ha llegado a cero. Peligro de botrytis.", 'fungus');
+    } else {
+      lastSpokenAlertRef.current = '';
     }
   }, [vpd, sporeTimer, consoleModeActive]);
 
@@ -305,6 +313,115 @@ function App() {
       };
     }
   }, [vpd, stage, targets, genetics, selectedStrain]);
+
+
+  const auditSections = useMemo(() => {
+    const isDaySet = temp !== 24 || humidity !== 60 || leafOffset !== -2;
+    const isNightSet = nightTempDrop !== 5;
+    const isLightSet = ppfdInput !== 600 || lightIntensity !== 600;
+    const isWateringSet = plantsCount !== 4 || potSize !== 10 || soilEc !== 1.4 || substrate !== 'soil';
+    const isVentilationSet = roomWidth !== 1.2 || roomLength !== 1.2 || roomHeight !== 2.0;
+    const isDryingSet = dryTemp !== 18 || dryHumidity !== 60 || dryAirflow !== 'optimal';
+    const isSensorSet = selectedSensor !== '';
+
+    return {
+      day: {
+        isSet: isDaySet,
+        title: "Variables Diurnas (Clima de Día)",
+        badge: isDaySet ? "Configurado 🟢" : "No Configurado 🔴",
+        alertText: isDaySet 
+          ? "Variables diurnas calibradas con las condiciones reales del cultivo."
+          : "⚠️ ALERTA: Estás utilizando los parámetros diurnos predeterminados (24°C, 60% HR, Offset -2°C). Esto puede alterar la precisión del DPV calculado.",
+        data: [
+          { name: "Temperatura del Aire", value: `${temp.toFixed(1)}°C`, target: "18°C - 30°C" },
+          { name: "Humedad Relativa (HR)", value: `${activeHumidity}%`, target: `Smart: ${idealHumidity}% | Manual: ${humidity}%` },
+          { name: "Offset Térmico de Hoja", value: `${leafOffset}°C`, target: "LED: -2°C a -3°C | Sodio: +1°C" },
+          { name: "Déficit Presión Vapor (DPV)", value: `${vpd.toFixed(2)} kPa`, target: `Objetivo: ${targetVpd.toFixed(1)} kPa (${status.label})` }
+        ]
+      },
+      night: {
+        isSet: isNightSet,
+        title: "Transición Nocturna (Lights-Off)",
+        badge: isNightSet ? "Personalizado 🟢" : "Predeterminado 🔴",
+        alertText: isNightSet
+          ? `Transición de apagado calibrada con una caída de ${nightTempDrop}°C.`
+          : "⚠️ ALERTA: Caída de temperatura nocturna sin configurar (por defecto 5°C). Puede haber riesgo oculto de condensación o botrytis al apagar luces.",
+        data: [
+          { name: "Caída de Temp. Nocturna", value: `${nightTempDrop}°C`, target: "Recomendado: 4°C - 6°C" },
+          { name: "Temp. Nocturna Proyectada", value: `${(temp - nightTempDrop).toFixed(1)}°C`, target: "Límite seguro: >15°C" },
+          { name: "HR Nocturna Proyectada", value: `${Math.round(predictNightRH(temp, activeHumidity, nightTempDrop))}%`, target: "Límite seguro: <85%" },
+          { name: "Punto de Rocío Proyectado", value: `${calculateDewPoint(temp - nightTempDrop, predictNightRH(temp, activeHumidity, nightTempDrop)).toFixed(1)}°C`, target: "Temp. Hoja debe estar por encima" }
+        ]
+      },
+      light: {
+        isSet: isLightSet,
+        title: "Iluminación PAR & PPFD/DLI",
+        badge: isLightSet ? "Ajustado 🟢" : "Predeterminado 🔴",
+        alertText: isLightSet
+          ? `Luz calibrada a ${ppfdInput} µmol/m²/s con el DPV.`
+          : "⚠️ ALERTA: Potencia PAR e iluminación sin calibrar (valor base de 600 µmol/m²/s). Ajusta el dimmer del panel LED para evitar fotorrespiración o fitoestrés.",
+        data: [
+          { name: "Tipo de Iluminación", value: lightType.toUpperCase(), target: "LED, HPS o Sol" },
+          { name: "Distancia al Dosel", value: `${lightDistance} cm`, target: "Recomendado: 30cm - 60cm" },
+          { name: "Intensidad PAR / PPFD", value: `${ppfdInput} µmol/m²/s`, target: "Veg: 400-600 | Flora: 800-1200" },
+          { name: "Eficiencia de Asimilación", value: `${calculatePhotosyntheticEfficiency(calculateStomatalConductance(vpd, lightIntensity, genetics), ppfdInput).efficiency.toFixed(0)}%`, target: "Objetivo cuántico: >80%" }
+        ]
+      },
+      watering: {
+        isSet: isWateringSet,
+        title: "Demanda de Riego & EC Osmótica",
+        badge: isWateringSet ? "Personalizado 🟢" : "Predeterminado 🔴",
+        alertText: isWateringSet
+          ? `Sales (EC: ${soilEc.toFixed(1)} mS/cm) y macetas configuradas. Consumo hídrico proyectado.`
+          : "⚠️ ALERTA: Nutrición EC y riego sin personalizar (4 plantas, maceta 10L, suelo, EC 1.4). Calibra para calcular la evaporación y evitar asfixia radicular.",
+        data: [
+          { name: "Electroconductividad (EC)", value: `${soilEc.toFixed(1)} mS/cm`, target: "Óptimo: 1.2 - 2.0 mS/cm" },
+          { name: "Cantidad de Plantas", value: `${plantsCount} macetas`, target: "Densidad de canopia" },
+          { name: "Volumen de Maceta", value: `${potSize} Litros`, target: "Capacidad de retención" },
+          { name: "Consumo Hídrico Proyectado", value: `${calculateEvapotranspiration(plantsCount, potSize, vpd, stage === 'early' ? 0.25 : stage === 'veg' ? 0.75 : 1.20, substrate === 'soil' ? 1.0 : substrate === 'coco' ? 1.25 : 1.50).toFixed(2)} L/Día`, target: `Riego: ${calculateWateringFrequency(potSize, calculateEvapotranspiration(plantsCount, potSize, vpd, stage === 'early' ? 0.25 : stage === 'veg' ? 0.75 : 1.20, substrate === 'soil' ? 1.0 : substrate === 'coco' ? 1.25 : 1.50) / plantsCount, substrate).text}` }
+        ]
+      },
+      ventilation: {
+        isSet: isVentilationSet,
+        title: "Caudal de Extracción y Aire",
+        badge: isVentilationSet ? "Configurado 🟢" : "Predeterminado 🔴",
+        alertText: isVentilationSet
+          ? `Dimensiones del cuarto configuradas. Caudal necesario: ${(roomWidth * roomLength * roomHeight * 60 * 1.2).toFixed(0)} m³/h.`
+          : "⚠️ ALERTA: Usando dimensiones de sala por defecto (1.2m x 1.2m x 2.0m). El caudal de renovación calculado podría no ser válido para renovar el CO2.",
+        data: [
+          { name: "Volumen del Cuarto", value: `${(roomWidth * roomLength * roomHeight).toFixed(2)} m³`, target: `${roomWidth.toFixed(1)}m x ${roomLength.toFixed(1)}m x ${roomHeight.toFixed(1)}m` },
+          { name: "Caudal Mínimo (Carbon Filt.)", value: `${(roomWidth * roomLength * roomHeight * 60 * 1.2).toFixed(0)} m³/h`, target: "Renovación 1 vez por minuto" },
+          { name: "Sugerencia Extractor", value: adminConfig.sponsors.ventilation.model, target: adminConfig.sponsors.ventilation.brand }
+        ]
+      },
+      drying: {
+        isSet: isDryingSet,
+        title: "Secado & Curado Post-Cosecha",
+        badge: isDryingSet ? "Calibrado 🟢" : "Predeterminado 🔴",
+        alertText: isDryingSet
+          ? `Sala de secado configurada a ${dryTemp.toFixed(1)}°C y ${dryHumidity}% HR.`
+          : "⚠️ ALERTA: No has calibrado los controles de secado y curado. Usando clima base de 18°C y 60% HR (riesgo si tu sala real es diferente).",
+        data: [
+          { name: "Temperatura de Secado", value: `${dryTemp.toFixed(1)}°C`, target: "Óptimo: 15°C - 18°C" },
+          { name: "Humedad Relativa Secado", value: `${dryHumidity}%`, target: "Óptimo: 55% - 60%" },
+          { name: "DPV de Secado Proyectado", value: `${calculateDryingVPD(dryTemp, dryHumidity).toFixed(2)} kPa`, target: "Objetivo: 0.90 kPa" },
+          { name: "Tiempo Estimado de Secado", value: `~${Math.round(calculateDryingDays(calculateDryingVPD(dryTemp, dryHumidity), dryAirflow).days)} días`, target: calculateDryingDays(calculateDryingVPD(dryTemp, dryHumidity), dryAirflow).text.substring(0, 40) + "..." }
+        ]
+      },
+      sensor: {
+        isSet: isSensorSet,
+        title: "Sondas & Calibración de Precisión",
+        badge: isSensorSet ? "Calibrado 🟢" : "No Calibrado 🔴",
+        alertText: isSensorSet
+          ? `Sonda oficial ${adminConfig.sensorPartners.find(s => s.id === selectedSensor)?.name} calibrada con un offset de ${adminConfig.sensorPartners.find(s => s.id === selectedSensor)?.offset}°C.`
+          : "⚠️ ALERTA: Sensor de clima original sin calibrar. Se utiliza un offset manual genérico. Para mediciones exactas, calibra con sondas Pulse, Ruuvi o Inkbird.",
+        data: [
+          { name: "Sensor / Sonda", value: isSensorSet ? adminConfig.sensorPartners.find(s => s.id === selectedSensor)?.name : "Offset Manual Genérico", target: "Calibración automática" },
+          { name: "Offset Oficial Compensado", value: isSensorSet ? `${adminConfig.sensorPartners.find(s => s.id === selectedSensor)?.offset}°C` : `${leafOffset}°C`, target: "Desviación hoja vs aire" }
+        ]
+      }
+    };
+  }, [temp, humidity, leafOffset, activeHumidity, idealHumidity, vpd, targetVpd, status, nightTempDrop, ppfdInput, lightIntensity, lightType, lightDistance, soilEc, plantsCount, potSize, substrate, roomWidth, roomLength, roomHeight, dryTemp, dryHumidity, dryAirflow, selectedSensor, adminConfig]);
 
 
   if (consoleModeActive) {
@@ -621,34 +738,6 @@ function App() {
                   <p>{advice}</p>
                 </div>
               </div>
-
-              {/* Botón de Reporte PDF Imprimible (v0.9 Phase 3) */}
-              <button 
-                onClick={() => window.print()}
-                className="console-btn-glow"
-                style={{
-                  background: 'rgba(0, 240, 255, 0.1)',
-                  border: '1px solid rgba(0, 240, 255, 0.3)',
-                  color: '#00F0FF',
-                  padding: '8px 16px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  maxWidth: '280px',
-                  marginTop: '-15px',
-                  marginBottom: '10px',
-                  transition: 'all 0.2s',
-                  zIndex: 10
-                }}
-              >
-                📊 Generar Reporte PDF Imprimible
-              </button>
             </section>
 
             <section className="controls-grid">
@@ -1077,6 +1166,9 @@ function App() {
                   </button>
                   <button className={`pro-nav-btn ${activeProTool === 'directorio' ? 'active' : ''}`} onClick={() => setActiveProTool('directorio')}>
                     🗺️ Locales Aliados
+                  </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'reporte' ? 'active' : ''}`} onClick={() => setActiveProTool('reporte')}>
+                    📊 Ficha y Reporte
                   </button>
                 </nav>
               </aside>
@@ -2584,6 +2676,128 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {activeProTool === 'reporte' && (
+                  <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                    <div style={{ marginBottom: '25px' }}>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#00FF88', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        📋 Auditoría Integral de Cultivo (Ficha Técnica)
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                        Inspecciona y valida cada una de las variables físicas y biológicas configuradas en tu sala de cultivo. Este diagnóstico provee un historial científico fiable offline del estado exacto del cultivo.
+                      </p>
+                    </div>
+
+                    {/* Pre-visualización de Ficha de Auditoría en Pantalla (v1.0) */}
+                    <div className="glow-border glass" style={{ padding: '25px', borderRadius: '16px', border: '1px solid rgba(0,255,136,0.15)', background: 'rgba(0,0,0,0.4)', marginBottom: '25px' }}>
+                      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                        <div style={{ textAlign: 'left' }}>
+                          <strong style={{ fontSize: '1.1rem', color: '#00FF88', display: 'block' }}>DPV PRO - AUDITORÍA INTEGRAL DE SALA</strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Diagnóstico de Precisión Científica para Cultivadores</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block' }}>PUNTO DE ASESORÍA OFICIAL:</span>
+                          <strong style={{ fontSize: '0.85rem', color: '#fff' }}>{adminConfig.growShops[0].name}</strong>
+                        </div>
+                      </div>
+
+                      {/* Recorrer las 7 secciones de auditoría */}
+                      {Object.keys(auditSections).map((key) => {
+                        const sec = auditSections[key];
+                        return (
+                          <div key={key} style={{ marginBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px', textAlign: 'left' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                              <h4 style={{ fontSize: '0.9rem', color: '#00F0FF', margin: 0, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {sec.title}
+                              </h4>
+                              <span className={`badge-audit ${sec.isSet ? 'badge-audit-set' : 'badge-audit-unset'}`}>
+                                {sec.badge}
+                              </span>
+                            </div>
+
+                            {/* Cartel / Alerta en Pantalla */}
+                            <div className={`audit-alert-card ${sec.isSet ? 'set' : 'unset'}`}>
+                              {sec.alertText}
+                            </div>
+
+                            {/* Tabla Estructurada */}
+                            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255,255,255,0.02)' }}>
+                                  <th style={{ textAlign: 'left', padding: '8px', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.05)' }}>Parámetro / Variable</th>
+                                  <th style={{ textAlign: 'left', padding: '8px', color: '#fff', border: '1px solid rgba(255,255,255,0.05)' }}>Valor Configurado</th>
+                                  <th style={{ textAlign: 'left', padding: '8px', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.05)' }}>Rango / Referencia Científica</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sec.data.map((row, index) => (
+                                  <tr key={index} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                    <td style={{ padding: '8px', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.05)' }}>{row.name}</td>
+                                    <td style={{ padding: '8px', color: '#00FF88', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.05)' }}>{row.value}</td>
+                                    <td style={{ padding: '8px', color: 'var(--text-secondary)', fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.05)' }}>{row.target}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })}
+
+                      {/* Equipamientos Activos (Sección de Carga Eléctrica) */}
+                      <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)', textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>🔌 CARGA CLIMÁTICA Y DISPOSITIVOS ACTIVADOS:</span>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {Object.keys(activeDevices).map(key => (
+                            <span 
+                              key={key} 
+                              className={`badge-audit ${activeDevices[key] ? 'badge-audit-set' : 'badge-audit-unset'}`}
+                              style={{ fontSize: '0.7rem' }}
+                            >
+                              {key === 'lights' ? '💡 Luces' : key === 'humidifier' ? '💧 Humidificador' : key === 'dehumidifier' ? '❄️ Deshum.' : key === 'extractor' ? '🌪️ Extractor' : key === 'heater' ? '🔥 Calefactor' : '❄️ AC'}
+                              : {activeDevices[key] ? 'Activo' : 'Inactivo'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Cupones de descuento activos */}
+                      <div style={{ marginBottom: '25px', background: 'rgba(255, 214, 0, 0.02)', padding: '15px', borderRadius: '10px', border: '1px solid rgba(255, 214, 0, 0.15)', textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#FFD600', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>🎫 CUPONES DE DESCUENTO Y SOCIOS ACTIVADOS EN SESIÓN:</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>🛍️ Grow Shop: <strong>{adminConfig.growShops[0].coupon}</strong> (10% OFF en {adminConfig.growShops[0].name})</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>💡 Panel LED: <strong>{adminConfig.sponsors.led.coupon}</strong> (Mars Hydro FC)</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>🌪️ Turbina Extracción: <strong>{adminConfig.sponsors.ventilation.coupon}</strong> (Garden Highpro)</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>🛡️ Preventivo Oídio: <strong>{adminConfig.sponsors.fungicide.coupon}</strong> (BioGreen Fungi)</div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                        <button 
+                          onClick={() => window.print()}
+                          className="console-btn-glow"
+                          style={{ 
+                            background: 'linear-gradient(135deg, #00FF88, #00D060)', 
+                            color: '#050805', 
+                            padding: '12px 24px', 
+                            borderRadius: '10px', 
+                            fontSize: '0.9rem', 
+                            fontWeight: 'bold', 
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            border: 'none'
+                          }}
+                        >
+                          📊 Descargar Auditoría Completa (Guardar PDF / Imprimir)
+                        </button>
+                        <p style={{ margin: '8px 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                          * Genera una copia física u offline del estado completo de tu cultivo para tu historial de sala.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -2902,7 +3116,7 @@ function App() {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
                 <div>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block' }}>CÓDIGO DE DESCUENTO EXCLUSIVO:</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block' }}>CÓDIGO DE DESCUENTO:</span>
                   <strong style={{ fontSize: '0.9rem', color: '#FFD600', letterSpacing: '0.5px' }}>{ledSponsor.coupon}</strong>
                 </div>
                 <a 
@@ -2910,18 +3124,17 @@ function App() {
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="console-btn-glow"
-                  style={{ 
-                    background: '#FF4D4D', 
-                    color: '#050805', 
-                    padding: '8px 18px', 
-                    borderRadius: '8px', 
-                    fontSize: '0.8rem', 
-                    fontWeight: 'bold', 
-                    textDecoration: 'none',
-                    textAlign: 'center'
+                  style={{
+                    background: '#00FF88',
+                    color: '#050805',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    textDecoration: 'none'
                   }}
                 >
-                  Ver Mars Hydro ↗
+                  Comprar Panel LED ↗
                 </a>
               </div>
             </div>
@@ -2929,82 +3142,127 @@ function App() {
         );
       })()}
 
-      {/* Printable PDF Report Layout (v0.9 Phase 3) */}
+      {/* Printable PDF Report Layout (v1.0 Enriched Grow Audit) */}
       <div className="print-report-only">
         <div style={{ borderBottom: '3px solid #000', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '2rem', margin: 0, color: '#000', fontFamily: 'sans-serif' }}>DPV PRO - Reporte Científico de Cultivo</h1>
-            <span style={{ fontSize: '0.9rem', color: '#555' }}>Herramienta de Diagnológico Fisiológico Vegetal de Precisión</span>
+          <div style={{ textAlign: 'left' }}>
+            <h1 style={{ fontSize: '2rem', margin: 0, color: '#000', fontFamily: 'sans-serif' }}>DPV PRO - AUDITORÍA INTEGRAL DE CULTIVO</h1>
+            <span style={{ fontSize: '0.9rem', color: '#555' }}>Reporte de Precisión y Calibración Fisiológica Vegetal (Offline Físico)</span>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <strong style={{ fontSize: '1.2rem', display: 'block', color: '#000' }}>{adminConfig.growShops[0].name}</strong>
-            <span style={{ fontSize: '0.85rem', color: '#555' }}>Punto Oficial de Calibración DPV</span>
-          </div>
-        </div>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-          <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
-            <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #eee', paddingBottom: '6px', color: '#000' }}>Variables de Sala</h3>
-            <table style={{ width: '100%', fontSize: '0.9rem', color: '#000' }}>
-              <tbody>
-                <tr><td style={{ padding: '4px 0' }}>Etapa de Cultivo:</td><td><strong>{targets[stage].name}</strong></td></tr>
-                <tr><td style={{ padding: '4px 0' }}>Temperatura Aire:</td><td><strong>{temp.toFixed(1)} °C</strong></td></tr>
-                <tr><td style={{ padding: '4px 0' }}>Humedad Relativa:</td><td><strong>{activeHumidity} %</strong></td></tr>
-                <tr><td style={{ padding: '4px 0' }}>Offset de Hoja:</td><td><strong>{leafOffset} °C</strong></td></tr>
-                <tr><td style={{ padding: '4px 0' }}>Genética / Arquetipo:</td><td style={{ textTransform: 'uppercase' }}><strong>{genetics}</strong></td></tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>DÉFICIT DE PRESIÓN DE VAPOR</span>
-            <strong style={{ fontSize: '3.5rem', margin: '5px 0', color: '#000', fontFamily: 'monospace' }}>{vpd.toFixed(2)} kPa</strong>
-            <span style={{ fontSize: '0.9rem', padding: '4px 12px', background: '#eee', borderRadius: '15px', display: 'inline-block', fontWeight: 'bold', color: '#000', border: '1px solid #ccc' }}>{status.label}</span>
+            <strong style={{ fontSize: '1.25rem', display: 'block', color: '#000' }}>{adminConfig.growShops[0].name}</strong>
+            <span style={{ fontSize: '0.85rem', color: '#555' }}>Punto de Calibración DPV Autorizado</span>
           </div>
         </div>
 
-        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
-          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #eee', paddingBottom: '6px', color: '#000' }}>Diagnóstico y Sugerencia Fisiológica</h3>
-          <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.45', color: '#000' }}>{advice}</p>
+        {/* Informacion de la sesion */}
+        <div style={{ border: '1px solid #000', padding: '12px', background: '#f5f5f5', marginBottom: '20px', fontSize: '0.85rem', textAlign: 'left', color: '#000' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>📅 <strong>Fecha del Reporte:</strong> {new Date().toLocaleDateString('es-ES')}</div>
+            <div>🧬 <strong>Genética / Perfil Activo:</strong> {selectedStrain.name}</div>
+            <div>🌱 <strong>Etapa de Desarrollo:</strong> {targets[stage].name}</div>
+            <div>📊 <strong>DPV Diurno Promedio:</strong> <strong>{vpd.toFixed(2)} kPa</strong> ({status.label})</div>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-          {/* Transpiración y fotosíntesis */}
-          {(() => {
-            const gs = calculateStomatalConductance(vpd, lightIntensity, genetics);
-            const efficiencyData = calculatePhotosyntheticEfficiency(gs, ppfdInput);
-            const dailyWastedKwh = (deviceWattsMap.lights * deviceHoursMap.lights / 1000) * (efficiencyData.wastedWattsPercent / 100);
-            const monthlyWastedCash = dailyWastedKwh * 30 * kwhCost;
-            const osmoticData = calculateOsmoticStress(soilEc, vpd, genetics);
+        {/* Recorrer las 7 secciones de auditoría para la versión impresa */}
+        {Object.keys(auditSections).map((key) => {
+          const sec = auditSections[key];
+          return (
+            <div key={key} style={{ marginBottom: '25px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', paddingBottom: '8px', marginBottom: '10px' }}>
+                <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {sec.title}
+                </h3>
+                <span className={`badge-audit ${sec.isSet ? 'badge-audit-set' : 'badge-audit-unset'}`} style={{ border: '1px solid #ccc' }}>
+                  {sec.badge}
+                </span>
+              </div>
 
-            return (
-              <>
-                <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 8px 0', borderBottom: '1px solid #eee', paddingBottom: '4px', color: '#000' }}>Eficiencia Cuántica & Fotosíntesis</h4>
-                  <ul style={{ paddingLeft: '15px', margin: 0, fontSize: '0.85rem', lineHeight: '1.4', color: '#000' }}>
-                    <li style={{ padding: '2px 0' }}>Conductancia Estomática (gs): <strong>{gs.toFixed(0)} mmol/m²/s</strong></li>
-                    <li style={{ padding: '2px 0' }}>Eficiencia de Asimilación: <strong>{efficiencyData.efficiency.toFixed(0)}%</strong></li>
-                    <li style={{ padding: '2px 0' }}>Potencia Lumínica Desperdiciada: <strong>{efficiencyData.wastedWattsPercent}%</strong></li>
-                    {efficiencyData.wastedWattsPercent > 0 && <li style={{ padding: '2px 0', color: '#FF4D4D' }}>Fuga Económica Estimada: <strong>${monthlyWastedCash.toFixed(2)} / Mes</strong></li>}
-                  </ul>
-                </div>
-                <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
-                  <h4 style={{ margin: '0 0 8px 0', borderBottom: '1px solid #eee', paddingBottom: '4px', color: '#000' }}>Nutrición & Osmosis Radicular</h4>
-                  <ul style={{ paddingLeft: '15px', margin: 0, fontSize: '0.85rem', lineHeight: '1.4', color: '#000' }}>
-                    <li style={{ padding: '2px 0' }}>EC del Sustrato / Riego: <strong>{soilEc.toFixed(1)} mS/cm</strong></li>
-                    <li style={{ padding: '2px 0' }}>Potencial Osmótico (Ψ osm): <strong>{osmoticData.osmoticPotential.toFixed(3)} MPa</strong></li>
-                    <li style={{ padding: '2px 0' }}>Índice de Acumulación: <strong>{osmoticData.accumulationIndex.toFixed(0)}%</strong></li>
-                    <li style={{ padding: '2px 0' }}>Estado Fisiológico de Raíz: <strong style={{ textTransform: 'uppercase' }}>{osmoticData.status}</strong></li>
-                  </ul>
-                </div>
-              </>
-            );
-          })()}
+              {/* Cartel / Alerta Impreso */}
+              <div className={`audit-alert-card ${sec.isSet ? 'set' : 'unset'}`} style={{ padding: '10px', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '10px', fontWeight: 'bold' }}>
+                {sec.alertText}
+              </div>
+
+              {/* Tabla Estructurada de Alto Contraste */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#000' }}>
+                <thead>
+                  <tr style={{ background: '#eee', borderBottom: '2px solid #000' }}>
+                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Parámetro / Variable</th>
+                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Valor Configurado</th>
+                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Rango / Referencia Científica</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sec.data.map((row, index) => (
+                    <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
+                      <td style={{ padding: '6px', border: '1px solid #ddd' }}>{row.name}</td>
+                      <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd', color: '#000' }}>{row.value}</td>
+                      <td style={{ padding: '6px', border: '1px solid #ddd', color: '#555' }}>{row.target}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
+
+        {/* Equipamientos Activos */}
+        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
+          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🔌 Carga y Simulación de Dispositivos Eléctricos</h3>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {Object.keys(activeDevices).map(key => (
+              <span 
+                key={key} 
+                className={`badge-audit ${activeDevices[key] ? 'badge-audit-set' : 'badge-audit-unset'}`}
+                style={{ fontSize: '0.75rem', border: '1px solid #ccc' }}
+              >
+                {key === 'lights' ? '💡 Luces' : key === 'humidifier' ? '💧 Humidificador' : key === 'dehumidifier' ? '❄️ Deshum.' : key === 'extractor' ? '🌪️ Extractor' : key === 'heater' ? '🔥 Calefactor' : '❄️ AC'}
+                : {activeDevices[key] ? 'Activo' : 'Inactivo'}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div style={{ borderTop: '1px solid #ccc', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#555' }}>
-          <p>Reporte oficial emitido por <strong>DPV PRO v0.9</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
-          <p style={{ margin: '4px 0 0 0' }}>Presenta este reporte físico o digital en el local y obtén tu descuento con el cupón: <strong>{adminConfig.growShops[0].coupon}</strong></p>
+        {/* Cupones de descuento activos */}
+        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
+          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🎫 Cupones Activos y Beneficios en Tiendas</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: '#000' }}>
+            <thead>
+              <tr style={{ background: '#eee', borderBottom: '1px solid #000' }}>
+                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Socio Comercial / Marca</th>
+                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Código de Cupón</th>
+                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Beneficio Aplicado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛍️ {adminConfig.growShops[0].name} (Socio Físico)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.growShops[0].coupon}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>10% de Descuento en compra de fertilizantes y sustratos</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>💡 Mars Hydro (Paneles LED)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.sponsors.led.coupon}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>Envío gratis + Dimer de calibración inteligente bonificado</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🌪️ Garden Highpro (Ventilación)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.sponsors.ventilation.coupon}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>5% OFF en extractores Proline de alto caudal</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛡️ BioGreen Fungi (Preventivo)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.sponsors.fungicide.coupon}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>15% OFF en preventivo orgánico de botrytis</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ borderTop: '2px solid #000', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#555', pageBreakInside: 'avoid' }}>
+          <p>Reporte oficial de auditoría emitido de forma fiable y segura por <strong>DPV PRO v1.0</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
+          <p>Presenta este reporte en formato impreso o digital en tu Grow Shop aliado para validar tus cupones y la calibración del cultivo.</p>
         </div>
       </div>
     </div>
