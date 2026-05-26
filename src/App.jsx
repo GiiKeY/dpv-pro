@@ -13,9 +13,11 @@ import {
   calculateTranspirationRate,
   calculateEstimatedLeafTemp,
   calculateOsmoticStress,
-  calculatePhotosyntheticEfficiency
+  calculatePhotosyntheticEfficiency,
+  calculateDryingVPD,
+  calculateDryingDays
 } from './utils/calculations';
-import { Thermometer, Droplets, Leaf, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award, Activity, Compass, Flame } from 'lucide-react';
+import { Thermometer, Droplets, Leaf, Zap, ChevronRight, LayoutGrid, Table as TableIcon, HelpCircle, Heart, Target, Coffee, Copy, Check, X, Sparkles, AlertTriangle, Award, Activity, Compass, Flame, Package } from 'lucide-react';
 import './App.css';
 
 const BOTANICAL_ARCHETYPES = [
@@ -61,6 +63,12 @@ function App() {
     }
   });
   const [consoleModeActive, setConsoleModeActive] = useState(false);
+  
+  // Módulo de Secado y Curado (v0.9)
+  const [dryTemp, setDryTemp] = useState(18);
+  const [dryHumidity, setDryHumidity] = useState(60);
+  const [dryAirflow, setDryAirflow] = useState('optimal');
+  
   
   // Módulo 3: Riego/Evaporación
   const [plantsCount, setPlantsCount] = useState(4);
@@ -436,6 +444,9 @@ function App() {
         <button className={`view-btn ${view === 'table' ? 'active' : ''}`} onClick={() => setView('table')}>
           <TableIcon size={18} /> Tabla Completa
         </button>
+        <button className={`view-btn ${view === 'dry' ? 'active' : ''}`} onClick={() => setView('dry')}>
+          <Package size={18} /> Secado & Curado
+        </button>
         <button className={`view-btn ${view === 'pro' ? 'active' : ''}`} onClick={() => setView('pro')}>
           <Zap size={18} /> Herramientas Pro
         </button>
@@ -677,6 +688,304 @@ function App() {
             </div>
           </section>
         )}
+
+        {view === 'dry' && (() => {
+          const dryingVpd = calculateDryingVPD(dryTemp, dryHumidity);
+          const dryingDaysData = calculateDryingDays(dryingVpd, dryAirflow);
+          
+          let dryingStatus = { label: 'Óptimo (Secado Perfecto)', color: '#00FF88' };
+          if (dryingVpd < 0.60) {
+            dryingStatus = { label: 'Riesgo Crítico (Condensación / Moho)', color: '#FF4D4D' };
+          } else if (dryingVpd >= 0.60 && dryingVpd < 0.85) {
+            dryingStatus = { label: 'Secado Lento (Riesgo de Humedad)', color: '#FFD600' };
+          } else if (dryingVpd >= 0.85 && dryingVpd <= 0.95) {
+            dryingStatus = { label: 'Secado Óptimo (Preservación Perfecta)', color: '#00FF88' };
+          } else if (dryingVpd > 0.95 && dryingVpd <= 1.20) {
+            dryingStatus = { label: 'Secado Acelerado (Pérdida de Aromas)', color: '#FFA500' };
+          } else {
+            dryingStatus = { label: 'Secado Crítico (Flores Crujientes / Amargas)', color: '#FF4D4D' };
+          }
+
+          return (
+            <section className="pro-tools-view glass" style={{ padding: '30px', animation: 'fadeIn 0.5s ease', marginBottom: '25px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <h2 className="glow-text" style={{ fontSize: '2rem', color: '#00FF88', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <Package size={28} className="icon-pulse" /> Sala de Secado & Curado de Precisión
+                </h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '700px', margin: '0 auto', lineHeight: '1.5' }}>
+                  Control ambiental termodinámico enfocado en el momento más crítico en post-cosecha. Un DPV óptimo asegura la degradación completa de la clorofila y la retención intacta de terpenos y cannabinoides.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' }}>
+                {/* COLUMNA 1: AJUSTES Y PARÁMETROS */}
+                <div className="glow-border" style={{ padding: '24px', borderRadius: '16px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
+                    ⚙️ Variables del Cuarto de Secado
+                  </h3>
+
+                  {/* Slider de Temperatura */}
+                  <div className="form-group" style={{ marginBottom: '25px' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
+                      <span>Temperatura de Secado:</span>
+                      <strong style={{ color: '#FF4D4D', fontSize: '1rem' }}>{dryTemp.toFixed(1)}°C</strong>
+                    </label>
+                    <input 
+                      type="range" 
+                      min="10" 
+                      max="28" 
+                      step="0.5" 
+                      value={dryTemp} 
+                      onChange={(e) => setDryTemp(parseFloat(e.target.value))} 
+                    />
+                    <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      <span>Frío (Mirceno OK): 15°C</span>
+                      <span>Evaporación: &gt;20°C</span>
+                    </span>
+                  </div>
+
+                  {/* Slider de Humedad */}
+                  <div className="form-group" style={{ marginBottom: '25px' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
+                      <span>Humedad Relativa:</span>
+                      <strong style={{ color: '#00FF88', fontSize: '1rem' }}>{dryHumidity}%</strong>
+                    </label>
+                    <input 
+                      type="range" 
+                      min="30" 
+                      max="85" 
+                      step="1" 
+                      value={dryHumidity} 
+                      onChange={(e) => setDryHumidity(parseInt(e.target.value))} 
+                    />
+                    <span style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      <span>Secado Crujiente: &lt;45%</span>
+                      <span>Peligro Moho: &gt;65%</span>
+                    </span>
+                  </div>
+
+                  {/* Flujo de aire */}
+                  <div className="form-group" style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem' }}>
+                      Ventilación / Movimiento de Aire:
+                    </label>
+                    <select 
+                      value={dryAirflow} 
+                      onChange={(e) => setDryAirflow(e.target.value)} 
+                      style={{ 
+                        width: '100%', 
+                        background: 'rgba(0,0,0,0.5)', 
+                        border: '1px solid rgba(255,255,255,0.1)', 
+                        color: '#fff', 
+                        padding: '10px 14px', 
+                        borderRadius: '10px', 
+                        fontSize: '0.85rem',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="low">Flujo Suave / Extracción Mínima (Retención de aromas)</option>
+                      <option value="optimal">Flujo Óptimo / Circulación Indirecta (Recomendado)</option>
+                      <option value="high">Flujo Fuerte / Renovación Activa (Acelera secado)</option>
+                    </select>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginTop: '6px', lineHeight: '1.3' }}>
+                      💡 <em>Evita que el aire apunte directo a los cogollos colgando para no resecar las capas externas prematuramente.</em>
+                    </span>
+                  </div>
+                </div>
+
+                {/* COLUMNA 2: PANTALLA NEÓN Y VELOCIDAD DE SECADO */}
+                <div className="glow-border" style={{ padding: '24px', borderRadius: '16px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
+                      📊 Diagnóstico Termodinámico de Secado
+                    </h3>
+
+                    {/* Gran Display de DPV de Secado */}
+                    <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.4)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)', marginBottom: '20px' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '2px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                        DPV DE SECADO ACTUAL
+                      </span>
+                      <strong style={{ fontSize: '3rem', color: dryingStatus.color, textShadow: `0 0 20px ${dryingStatus.color}22`, fontFamily: 'monospace' }}>
+                        {dryingVpd.toFixed(2)} <span style={{ fontSize: '1.2rem' }}>kPa</span>
+                      </strong>
+
+                      <div style={{
+                        marginTop: '12px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        color: dryingStatus.color,
+                        backgroundColor: dryingStatus.color + '15',
+                        border: `1px solid ${dryingStatus.color}33`,
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        display: 'inline-block',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {dryingStatus.label}
+                      </div>
+                    </div>
+
+                    {/* Indicador de Velocidad de Secado */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '15px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Secado Total Estimado:</span>
+                        <strong style={{ fontSize: '1.2rem', color: '#00F0FF', fontFamily: 'monospace' }}>
+                          ~{Math.round(dryingDaysData.days)} días
+                        </strong>
+                      </div>
+
+                      <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
+                        <div style={{ 
+                          width: `${(dryingDaysData.days / 30) * 100}%`, 
+                          height: '100%', 
+                          backgroundColor: '#00F0FF',
+                          boxShadow: '0 0 8px #00F0FF',
+                          transition: 'width 0.4s ease-out' 
+                        }} />
+                      </div>
+                      
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                        {dryingDaysData.text}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ 
+                    padding: '10px 14px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(0,255,136,0.02)', 
+                    border: '1px solid rgba(0,255,136,0.05)',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: '1.3'
+                  }}>
+                    💡 <strong>Fórmula de Equilibrio:</strong> El DPV objetivo para el secado es de <strong>0.90 kPa</strong>. El desvío actual de tu sala es de <strong>{(dryingVpd - 0.90).toFixed(2)} kPa</strong>. Intenta calibrar tus controles para acercar el desvío a 0.00 kPa y lograr un curado óptimo.
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTENEDOR DE ADVERTENCIAS Y BIOLOGÍA */}
+              <div style={{ marginTop: '30px' }}>
+                {dryTemp > 20 && (
+                  <div style={{ background: 'rgba(255, 77, 77, 0.08)', border: '1px solid rgba(255, 77, 77, 0.2)', padding: '15px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '20px' }}>
+                    <AlertTriangle color="#FF4D4D" style={{ flexShrink: 0, marginTop: '2px' }} size={20} />
+                    <div>
+                      <strong style={{ color: '#FF4D4D', fontSize: '0.85rem' }}>⚠️ ALERTA DE VOLATILIZACIÓN DE TERPENOS:</strong>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        La temperatura de tu sala de secado es de <strong>{dryTemp.toFixed(1)}°C</strong>. Por encima de los 20°C, los terpenos más volátiles y valiosos (como el mirceno y el limoneno) se evaporan rápidamente en el aire, mermando permanentemente la fragancia, el sabor y la potencia de tu cosecha. Se recomienda enfriar el ambiente.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {(dryHumidity > 65 || dryingVpd < 0.70) && (
+                  <div style={{ background: 'rgba(255, 214, 0, 0.08)', border: '1px solid rgba(255, 214, 0, 0.2)', padding: '15px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '20px' }}>
+                    <AlertTriangle color="#FFD600" style={{ flexShrink: 0, marginTop: '2px' }} size={20} />
+                    <div>
+                      <strong style={{ color: '#FFD600', fontSize: '0.85rem' }}>⚠️ RIESGO ELEVADO DE PATÓGENOS Y MOHO GRIS (BOTRYTIS):</strong>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        Humedad excesivamente alta ({dryHumidity}%) o DPV demasiado bajo ({dryingVpd.toFixed(2)} kPa) detectados. En un cuarto de secado, las flores cargadas de savia vegetal son extremadamente vulnerables. Con una humedad mayor al 65%, las esporas fúngicas de la Botrytis pueden germinar en el interior de los cogollos en cuestión de horas. Enciende extractores para renovar el aire o instala un deshumidificador.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ background: 'rgba(0, 255, 136, 0.02)', border: '1px solid rgba(0, 255, 136, 0.05)', padding: '20px', borderRadius: '14px' }}>
+                  <strong style={{ color: '#00FF88', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Leaf size={16} /> Fisiología Vegetal Avanzada: La Degradación de la Clorofila
+                  </strong>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Durante las primeras dos semanas tras el corte, las enzimas dentro de la planta agonizan lentamente y continúan activas, alimentándose de los azúcares almacenados y descomponiendo la <strong>clorofila</strong> (el pigmento verde que le da sabor "áspero a pasto" y picor en la garganta a la flor). Un secado lento y equilibrado a un DPV de <strong>0.9 kPa</strong> le otorga a estas enzimas el tiempo y la humedad tisular exactos para desintegrar la clorofila por completo, logrando cogollos de ceniza blanca, sabor increíblemente suave y terpenos conservados a su máxima capacidad.
+                  </p>
+                </div>
+              </div>
+
+              {/* MONETIZACIÓN PREMIUM Y SPONSORS */}
+              <div style={{ marginTop: '40px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '30px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <Sparkles size={18} color="#FFD600" /> Soluciones Científicas de Curado Recomendadas
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  {/* SPONSOR 1: BOVEDA */}
+                  <div className="glow-border" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(0,255,136,0.1)', background: 'rgba(0, 255, 136, 0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'all 0.3s' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <strong style={{ fontSize: '1rem', color: '#00FF88' }}>Bóveda® 62% / 58%</strong>
+                        <span style={{ fontSize: '0.65rem', background: '#00FF8822', color: '#00FF88', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>PATROCINADOR OFICIAL</span>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: '0 0 15px 0' }}>
+                        El estándar mundial en control bidireccional de humedad. Sus membranas de sal osmótica natural absorben o liberan vapor de agua de forma constante para clavar la humedad en el frasco a 62% o 58%, sellando los terpenos y evitando moho.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block' }}>CÓDIGO DE DESCUENTO:</span>
+                        <strong style={{ fontSize: '0.85rem', color: '#FFD600', letterSpacing: '0.5px' }}>BOVEDASHADOW</strong>
+                      </div>
+                      <a 
+                        href="https://bovedainc.com/" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="console-btn-glow"
+                        style={{ 
+                          background: '#00FF88', 
+                          color: '#050805', 
+                          padding: '6px 14px', 
+                          borderRadius: '8px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 'bold', 
+                          textDecoration: 'none',
+                          textAlign: 'center'
+                        }}
+                      >
+                        Comprar Ahora ↗
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* SPONSOR 2: GROVE BAGS */}
+                  <div className="glow-border" style={{ padding: '20px', borderRadius: '14px', border: '1px solid rgba(0,223,255,0.1)', background: 'rgba(0, 223, 255, 0.01)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'all 0.3s' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <strong style={{ fontSize: '1rem', color: '#00DFFF' }}>Grove Bags TerpLoc®</strong>
+                        <span style={{ fontSize: '0.65rem', background: '#00DFFF22', color: '#00DFFF', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>PATROCINADOR OFICIAL</span>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: '0 0 15px 0' }}>
+                        Tecnología de empaque inteligente diseñada específicamente para flores. Su película multicapa TerpLoc® crea un microclima de DPV perfecto en el interior, purgando automáticamente el exceso de gas y reteniendo el 99% de los aromas originales sin sobre-secar.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block' }}>CÓDIGO DE DESCUENTO:</span>
+                        <strong style={{ fontSize: '0.85rem', color: '#FFD600', letterSpacing: '0.5px' }}>GROVESHADOW</strong>
+                      </div>
+                      <a 
+                        href="https://grovebags.com/" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="console-btn-glow"
+                        style={{ 
+                          background: '#00DFFF', 
+                          color: '#050805', 
+                          padding: '6px 14px', 
+                          borderRadius: '8px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 'bold', 
+                          textDecoration: 'none',
+                          textAlign: 'center'
+                        }}
+                      >
+                        Comprar Ahora ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        })()}
 
         {view === 'pro' && (
           <section className="pro-tools-view glass">

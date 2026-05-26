@@ -307,4 +307,55 @@ export const calculatePhotosyntheticEfficiency = (gs, ppfd) => {
   };
 };
 
+/**
+ * Calculates the Drying VPD (kPa) assuming leaf temperature offset is 0.
+ * In dry rooms, cut flowers do not transpire actively or self-refrigerate.
+ */
+export const calculateDryingVPD = (temp, humidity) => {
+  const vpsat = calculateVPsat(temp);
+  const vpd = vpsat * (1 - humidity / 100);
+  return Math.max(0, vpd);
+};
+
+/**
+ * Estimates the drying rate in days based on DPV and airflow.
+ * Formula: Days = 10 / VPD_dry adjusted by airflow.
+ */
+export const calculateDryingDays = (vpd, airflow = 'optimal') => {
+  if (vpd <= 0.05) return { days: 30, status: 'danger_slow', text: '🚨 RIESGO CRÍTICO DE MOHO: Secado detenido por humedad del 100%. Riesgo inminente de Botrytis.' };
+  
+  let baseDays = 10 / vpd;
+  
+  let airflowFactor = 1.0;
+  if (airflow === 'low') airflowFactor = 1.25; 
+  if (airflow === 'high') airflowFactor = 0.8;  
+  
+  const finalDays = baseDays * airflowFactor;
+  const daysVal = Math.min(30, Math.max(3, finalDays));
+  
+  let status = 'optimal';
+  let text = 'Velocidad óptima. Proceso de secado lento y controlado (10-14 días), ideal para descomponer la clorofila sin perder terpenos.';
+  
+  if (daysVal < 7) {
+    status = 'danger_fast';
+    text = '⚡ SECADO DEMASIADO ACELERADO: Las flores se secarán muy rápido (menos de 7 días). La clorofila quedará atrapada (sabor amargo a pasto) y perderás terpenos valiosos.';
+  } else if (daysVal >= 7 && daysVal < 10) {
+    status = 'warning_fast';
+    text = '⚠️ SECADO RÁPIDO: Velocidad al límite aceptable. Si es posible, aumenta levemente la humedad o baja el flujo de aire para prolongar el curado.';
+  } else if (daysVal > 16 && daysVal <= 20) {
+    status = 'warning_slow';
+    text = '⚠️ SECADO LENTO: Humedad alta. Las flores tardarán más de 16 días en secarse. Monitorea brotes y ventila para evitar bolsas de aire estancado.';
+  } else if (daysVal > 20) {
+    status = 'danger_slow';
+    text = '🚨 RIESGO CRÍTICO DE MOHO: Secado extremadamente lento. Mayor a 20 días. Riesgo severo de Botrytis y pudrición de cogollos. Sube la temperatura o enciende un deshumidificador.';
+  }
+  
+  return {
+    days: daysVal,
+    status,
+    text
+  };
+};
+
+
 
