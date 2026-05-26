@@ -1105,7 +1105,7 @@ function App() {
                             
                             return (
                               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Potencial Osmótico de Raíz ($\Psi_{osm}$):</span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Potencial Osmótico de Raíz (Ψ osm):</span>
                                 <strong style={{ fontSize: '1rem', color: '#00F0FF', marginTop: '2px' }}>{osmoticData.osmoticPotential.toFixed(3)} MPa</strong>
                                 <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                                   Índice de Acumulación: <strong style={{ color: colorEc }}>{osmoticData.accumulationIndex.toFixed(0)}%</strong>
