@@ -2338,3 +2338,35 @@ input[type="range"]::-moz-range-thumb:hover {
     transform: scale(1) translateY(0);
   }
 }
+
+/* Estilos de Interactividad de Facturación Premium */
+.invoice-row-hover {
+  transition: background 0.2s ease;
+}
+
+.invoice-row-hover:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Enfoque en Formularios de Pago */
+input[type="text"]:focus, 
+input[type="password"]:focus {
+  border-color: #FFD600 !important;
+  box-shadow: 0 0 10px rgba(255, 214, 0, 0.2) !important;
+}
+
+/* Imprimir Recibo Estilos Específicos */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-invoice, #printable-invoice * {
+    visibility: visible;
+  }
+  #printable-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
