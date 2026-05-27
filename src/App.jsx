@@ -3276,6 +3276,45 @@ function App() {
                       </p>
                     </div>
 
+                    {/* Duplicated Top Print Button */}
+                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                      <button 
+                        onClick={() => {
+                          triggerInterstitial(
+                            "Compilando Auditoría Integral de Cultivo y calibraciones térmicas...",
+                            `${adminConfig.sensorPartners[1].name} (Sonda WiFi Ruuvi de Alta Precisión)`,
+                            adminConfig.sensorPartners[1].coupon,
+                            () => {
+                              setIsPrinting(true);
+                              setTimeout(() => {
+                                window.print();
+                                setIsPrinting(false);
+                              }, 300);
+                            }
+                          );
+                        }}
+                        className="console-btn-glow"
+                        style={{ 
+                          background: 'linear-gradient(135deg, #00FF88, #00D060)', 
+                          color: '#050805', 
+                          padding: '12px 24px', 
+                          borderRadius: '10px', 
+                          fontSize: '0.9rem', 
+                          fontWeight: 'bold', 
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          border: 'none'
+                        }}
+                      >
+                        📊 Descargar Auditoría Completa (Guardar PDF / Imprimir)
+                      </button>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        * Genera una copia física u offline del estado completo de tu cultivo para tu historial de sala.
+                      </p>
+                    </div>
+
                     {/* Pre-visualización de Ficha de Auditoría en Pantalla (v1.0) */}
                     <div className="glow-border glass" style={{ padding: '25px', borderRadius: '16px', border: '1px solid rgba(0,255,136,0.15)', background: 'rgba(0,0,0,0.4)', marginBottom: '25px' }}>
                       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
