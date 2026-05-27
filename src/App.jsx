@@ -151,6 +151,60 @@ function App() {
     }
   });
 
+  // Estado de Intersticial Científico (Ads Optimizer)
+  const [interstitial, setInterstitial] = useState({ 
+    active: false, 
+    message: '', 
+    sponsor: '', 
+    coupon: '',
+    progress: 0, 
+    onComplete: null 
+  });
+
+  // Temporizador para simular carga científica intersticial
+  useEffect(() => {
+    let timer;
+    if (interstitial.active) {
+      timer = setInterval(() => {
+        setInterstitial(prev => {
+          if (prev.progress >= 100) {
+            clearInterval(timer);
+            setTimeout(() => {
+              if (prev.onComplete) prev.onComplete();
+              setInterstitial(i => ({ ...i, active: false, progress: 0 }));
+            }, 100);
+            return prev;
+          }
+          return { ...prev, progress: prev.progress + 4 }; // Carga en ~2.5 segundos
+        });
+      }, 100);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [interstitial.active]);
+
+  const triggerInterstitial = (message, sponsor, coupon, onComplete) => {
+    setInterstitial({
+      active: true,
+      message,
+      sponsor,
+      coupon,
+      progress: 0,
+      onComplete
+    });
+  };
+
+  // Helper para Banners de Publicidad Programática AdSense (Ads Optimizer)
+  const renderAdSenseBanner = (slotName) => (
+    <div className="adsense-sandbox-banner">
+      <span className="adsense-label">Publicidad Programática</span>
+      <div className="adsense-content">
+        🌿 <span className="adsense-sponsor-name">Anuncio AdSense ({slotName})</span>: ¿Deseas maximizar tu rendimiento y optimizar el DPV? Compra en nuestros grow shops autorizados y marcas recomendadas usando cupones exclusivos de DPV PRO.
+      </div>
+    </div>
+  );
+
   const selectedStrain = useMemo(() => {
     return BOTANICAL_ARCHETYPES.find(s => s.id === activeStrain) || BOTANICAL_ARCHETYPES[0];
   }, [activeStrain]);
@@ -802,6 +856,7 @@ function App() {
                 <input type="range" min="-5" max="2" step="0.5" value={leafOffset} onChange={(e) => setLeafOffset(parseFloat(e.target.value))} />
               </div>
             </section>
+            {renderAdSenseBanner("Dashboard Calculadora Horizontal")}
           </>
         )}
 
@@ -838,6 +893,7 @@ function App() {
                 </tbody>
               </table>
             </div>
+            {renderAdSenseBanner("Tabla Científica Inferior")}
           </section>
         )}
 
@@ -1462,8 +1518,15 @@ function App() {
                                 </div>
                                 <button 
                                   onClick={() => {
-                                    setLeafOffset(parseFloat(estimatedOffset.toFixed(1)));
-                                    handleCopy('', 'offset_injected');
+                                    triggerInterstitial(
+                                      "Calibrando coeficiente de offset y regulando evapotranspiración foliar...",
+                                      `${adminConfig.sponsors.led.brand} ${adminConfig.sponsors.led.model}`,
+                                      adminConfig.sponsors.led.coupon,
+                                      () => {
+                                        setLeafOffset(parseFloat(estimatedOffset.toFixed(1)));
+                                        handleCopy('', 'offset_injected');
+                                      }
+                                    );
                                   }}
                                   style={{
                                     background: 'linear-gradient(135deg, #00FF88, #00D060)',
@@ -1494,8 +1557,15 @@ function App() {
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                       <button 
                                         onClick={() => {
-                                          setLeafOffset(sens.offset);
-                                          handleCopy('', 'offset_sensor_applied');
+                                          triggerInterstitial(
+                                            `Compensando lecturas microclimáticas mediante sensor original ${sens.name}...`,
+                                            sens.name,
+                                            sens.coupon,
+                                            () => {
+                                              setLeafOffset(sens.offset);
+                                              handleCopy('', 'offset_sensor_applied');
+                                            }
+                                          );
                                         }}
                                         style={{
                                           background: 'rgba(0, 223, 255, 0.1)',
@@ -1835,6 +1905,49 @@ function App() {
                               </div>
                             )}
 
+                            {/* Botón Extractor Express (v1.0 Ads Optimizer) */}
+                            {vpd < 0.3 && (
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                background: 'rgba(0, 240, 255, 0.05)',
+                                border: '1px solid rgba(0, 240, 255, 0.15)',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                marginBottom: '12px',
+                                animation: 'pulseGlow 2.5s infinite ease-in-out',
+                                textAlign: 'left'
+                              }}>
+                                <div style={{ flex: 1 }}>
+                                  <span style={{ fontSize: '0.65rem', color: '#00F0FF', fontWeight: 'bold', display: 'block' }}>🌪️ MITIGACIÓN DE HUMEDAD URGENTE:</span>
+                                  <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.ventilation.brand} - {adminConfig.sponsors.ventilation.model}</strong>
+                                  <p style={{ margin: '2px 0 0 0', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>El DPV es críticamente bajo. Renueva el aire de la sala cada 60s para evacuar el agua líquida libre.</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
+                                  <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.ventilation.coupon}</strong></span>
+                                  <a 
+                                    href={adminConfig.sponsors.ventilation.link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="console-btn-glow"
+                                    style={{ 
+                                      background: '#00F0FF', 
+                                      color: '#050805', 
+                                      padding: '4px 10px', 
+                                      borderRadius: '6px', 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 'bold', 
+                                      textDecoration: 'none',
+                                      marginTop: '2px'
+                                    }}
+                                  >
+                                    Ver Extractor ↗
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
                             <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
                               <div style={{
                                 width: `${(sporeTimer / 300) * 100}%`,
@@ -1936,6 +2049,49 @@ function App() {
                           </div>
                         );
                       })()}
+
+                      {/* PUBLICIDAD CONTEXTUAL DIRECTA DE ILUMINACIÓN LED (v1.0 Ads Optimizer) */}
+                      <div className="advertisement-card-premium optimal-ec" style={{ marginTop: '20px' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <strong style={{ fontSize: '0.85rem', color: '#00f0ff' }}>
+                              💡 ¿Quieres maximizar la fotosíntesis sin aumentar el estrés térmico?
+                            </strong>
+                            <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                              ILUMINACIÓN EFICIENTE
+                            </span>
+                          </div>
+                          <p style={{ margin: '0 0 15px 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                            Bajo iluminación tradicional de Sodio (HPS) o LED ineficiente, el calor disipado cierra los estomas foliares en un <strong>{((1 - calculatePhotosyntheticEfficiency(calculateStomatalConductance(vpd, lightIntensity, genetics), ppfdInput).efficiency / 100) * 100).toFixed(0)}%</strong>. Cambia al panel Mars Hydro FC-3000 con dimmer de alta precisión y espectro fotosintético puro para cosechar flores resinosas sin elevar la temperatura ambiental.
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block' }}>RECOMENDADO POR DPV PRO:</span>
+                            <strong style={{ fontSize: '0.8rem', color: '#fff' }}>{adminConfig.sponsors.led.brand} - {adminConfig.sponsors.led.model}</strong>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.led.coupon}</strong> (35% Ahorro)</span>
+                            <a 
+                              href={adminConfig.sponsors.led.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="console-btn-glow"
+                              style={{ 
+                                background: '#00f0ff', 
+                                color: '#050805', 
+                                padding: '4px 10px', 
+                                borderRadius: '6px', 
+                                fontSize: '0.7rem', 
+                                fontWeight: 'bold', 
+                                textDecoration: 'none'
+                              }}
+                            >
+                              Ver Panel LED ↗
+                            </a>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* RANGOS DE DPV OPTIMIZADOS APLICADOS */}
@@ -2044,6 +2200,75 @@ function App() {
                               {vpd > 1.2 && "⚠️ DPV ALTO: Alta demanda hídrica. Las plantas pierden agua rápidamente para no quemarse. Necesitarás regar con mayor frecuencia o aumentar el volumen diario para evitar marchitamiento estresante."}
                             </div>
                           </div>
+ 
+                          {/* PUBLICIDAD CONTEXTUAL DIRECTA DE NUTRIENTES (v1.0 Ads Optimizer) */}
+                          {(() => {
+                            let adClass = 'optimal-ec';
+                            let adTitle = 'Nutrición Orgánica en Rango Óptimo 🟢';
+                            let adBrand = adminConfig.fertilizers.lowEc.brand;
+                            let adProduct = adminConfig.fertilizers.lowEc.product;
+                            let adDesc = 'Tu sustrato está en el rango de conductividad de precisión. Para mantener el crecimiento explosivo y la asimilación estomática perfecta, añade Bio-Grow de forma 100% orgánica.';
+                            let adCoupon = adminConfig.fertilizers.lowEc.coupon;
+                            let adLink = adminConfig.fertilizers.lowEc.link;
+ 
+                            if (soilEc < 1.2) {
+                              adClass = 'low-ec';
+                              adTitle = '⚠️ CONDUCTIVIDAD BAJA: Crecimiento Lento';
+                              adDesc = `Tu electroconductividad está baja (${soilEc.toFixed(1)} mS/cm). La planta tiene hambre y el DPV ideal no se aprovechará por falta de nutrientes. Añade ${adProduct} de forma inmediata.`;
+                            } else if (soilEc > 2.0) {
+                              adClass = 'high-ec';
+                              adTitle = '🔥 ALERTA DE EXCESO DE SALES / SOBREFERTILIZACIÓN';
+                              adBrand = adminConfig.fertilizers.highEc.brand;
+                              adProduct = adminConfig.fertilizers.highEc.product;
+                              adDesc = `¡Conductividad crítica de ${soilEc.toFixed(1)} mS/cm! Las raíces experimentan estrés osmótico extremo. Riega con agua sola y aplica Sensi Flush urgentemente para lavar el medio de cultivo.`;
+                              adCoupon = adminConfig.fertilizers.highEc.coupon;
+                              adLink = adminConfig.fertilizers.highEc.link;
+                            }
+ 
+                            return (
+                              <div className={`advertisement-card-premium ${adClass}`} style={{ marginTop: '20px' }}>
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <strong style={{ fontSize: '0.85rem', color: adClass === 'high-ec' ? '#ff4d4d' : adClass === 'low-ec' ? '#00ff88' : '#00f0ff' }}>
+                                      {adTitle}
+                                    </strong>
+                                    <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                                      SOLUCIÓN CONTEXTUAL
+                                    </span>
+                                  </div>
+                                  <p style={{ margin: '0 0 15px 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                    {adDesc}
+                                  </p>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                                  <div>
+                                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block' }}>RECOMENDADO POR DPV PRO:</span>
+                                    <strong style={{ fontSize: '0.8rem', color: '#fff' }}>{adBrand} - {adProduct}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                    <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adCoupon}</strong></span>
+                                    <a 
+                                      href={adLink} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="console-btn-glow"
+                                      style={{ 
+                                        background: adClass === 'high-ec' ? '#ff4d4d' : '#00f0ff', 
+                                        color: '#050805', 
+                                        padding: '4px 10px', 
+                                        borderRadius: '6px', 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 'bold', 
+                                        textDecoration: 'none'
+                                      }}
+                                    >
+                                      Ver Producto ↗
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })()}
@@ -2445,28 +2670,37 @@ function App() {
                           </button>
                         </div>
                       </div>
-
+ 
+                      {renderAdSenseBanner("Trivia Native Ad")}
+ 
                       {!quizSubmitted ? (
                         <button 
                           className="quiz-submit-btn" 
                           onClick={() => {
                             if (!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3 || !quizAnswers.q4 || !quizAnswers.q5) return;
-                            let score = 0;
-                            if (quizAnswers.q1 === 'B') score++;
-                            if (quizAnswers.q2 === 'C') score++;
-                            if (quizAnswers.q3 === 'A') score++;
-                            if (quizAnswers.q4 === 'B') score++;
-                            if (quizAnswers.q5 === 'B') score++;
-                            setQuizScore(score);
-                            setQuizSubmitted(true);
-                            if (score === 5) {
-                              setHasBadge(true);
-                              try {
-                                localStorage.setItem('dpv_pro_badge', 'true');
-                              } catch (err) {
-                                console.warn('Storage blocked:', err);
+                            triggerInterstitial(
+                              "Analizando respuestas y compilando diagnóstico fitológico...",
+                              `${adminConfig.sponsors.academy.name} - ${adminConfig.sponsors.academy.course}`,
+                              adminConfig.sponsors.academy.coupon,
+                              () => {
+                                let score = 0;
+                                if (quizAnswers.q1 === 'B') score++;
+                                if (quizAnswers.q2 === 'C') score++;
+                                if (quizAnswers.q3 === 'A') score++;
+                                if (quizAnswers.q4 === 'B') score++;
+                                if (quizAnswers.q5 === 'B') score++;
+                                setQuizScore(score);
+                                setQuizSubmitted(true);
+                                if (score === 5) {
+                                  setHasBadge(true);
+                                  try {
+                                    localStorage.setItem('dpv_pro_badge', 'true');
+                                  } catch (err) {
+                                    console.warn('Storage blocked:', err);
+                                  }
+                                }
                               }
-                            }
+                            );
                           }}
                           disabled={!quizAnswers.q1 || !quizAnswers.q2 || !quizAnswers.q3 || !quizAnswers.q4 || !quizAnswers.q5}
                         >
@@ -2773,7 +3007,14 @@ function App() {
 
                       <div style={{ textAlign: 'center', marginTop: '20px' }}>
                         <button 
-                          onClick={() => window.print()}
+                          onClick={() => {
+                            triggerInterstitial(
+                              "Compilando Auditoría Integral de Cultivo y calibraciones térmicas...",
+                              `${adminConfig.sensorPartners[1].name} (Sonda WiFi Ruuvi de Alta Precisión)`,
+                              adminConfig.sensorPartners[1].coupon,
+                              () => window.print()
+                            );
+                          }}
                           className="console-btn-glow"
                           style={{ 
                             background: 'linear-gradient(135deg, #00FF88, #00D060)', 
@@ -3265,6 +3506,37 @@ function App() {
           <p>Presenta este reporte en formato impreso o digital en tu Grow Shop aliado para validar tus cupones y la calibración del cultivo.</p>
         </div>
       </div>
+
+      {/* Overlay Intersticial Científico (Ads Optimizer) */}
+      {interstitial.active && (
+        <div className="interstitial-overlay">
+          <div className="interstitial-card glow-border">
+            <div className="quantum-loader">
+              <div className="quantum-ring"></div>
+              <div className="quantum-ring"></div>
+              <div className="quantum-ring"></div>
+              <div className="quantum-core"></div>
+            </div>
+            
+            <h3 className="interstitial-msg">{interstitial.message}</h3>
+            <p className="interstitial-submsg">Calculando coeficientes termodinámicos de alta precisión...</p>
+            
+            <div className="progress-bar-container">
+              <div className="progress-bar-fill" style={{ width: `${interstitial.progress}%` }}></div>
+            </div>
+            
+            <div className="interstitial-sponsor-tag">
+              <span>PROCESADO Y OPTIMIZADO GRACIAS A:</span>
+              <strong>{interstitial.sponsor}</strong>
+              {interstitial.coupon && (
+                <span style={{ fontSize: '0.65rem', color: '#00FF88', marginTop: '2px' }}>
+                  Cupón Activo: <strong>{interstitial.coupon}</strong> (Ahorro validado)
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
