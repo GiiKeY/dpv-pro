@@ -151,6 +151,56 @@ function App() {
     }
   });
 
+  // Consola de Administración de Publicidades (v1.0 Ads Optimizer)
+  const [adSlots, setAdSlots] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dpv_pro_ad_slots');
+      return saved ? JSON.parse(saved) : [
+        { id: 'adsense_calc', name: 'AdSense - Calculadora', location: 'Pie de Calculadora', type: 'Programática AdSense', partnerActive: false, partnerName: 'Google AdSense', coupon: '', link: '' },
+        { id: 'adsense_table', name: 'AdSense - Tabla DPV', location: 'Pie de Tabla Completa', type: 'Programática AdSense', partnerActive: false, partnerName: 'Google AdSense', coupon: '', link: '' },
+        { id: 'adsense_quiz', name: 'AdSense - Trivia Native', location: 'Native Ad en Trivia', type: 'Programática AdSense', partnerActive: false, partnerName: 'Google AdSense', coupon: '', link: '' },
+        { id: 'sponsor_riego', name: 'Sponsor - Nutrientes EC', location: 'Módulo de Riego', type: 'Patrocinio Directo', partnerActive: true, partnerName: 'Biobizz Organic', coupon: 'BIOBISHADOW', link: '' },
+        { id: 'sponsor_esporas', name: 'Sponsor - Extractor Rocío', location: 'Reloj de Esporas', type: 'Patrocinio Directo', partnerActive: true, partnerName: 'Garden Highpro', coupon: 'SHADOWAIR', link: '' },
+        { id: 'sponsor_led', name: 'Sponsor - Iluminación LED', location: 'Optimizador PPFD', type: 'Patrocinio Directo', partnerActive: true, partnerName: 'Mars Hydro LED', coupon: 'LEDSHADOW', link: '' },
+        { id: 'sponsor_seeds', name: 'Sponsor - Semillas Dosel', location: 'Ficha de Genética', type: 'Banco de Semillas', partnerActive: true, partnerName: 'Shadow Seeds', coupon: 'SHADOWGG', link: '' }
+      ];
+    } catch {
+      return [
+        { id: 'adsense_calc', name: 'AdSense - Calculadora', location: 'Pie de Calculadora', type: 'Programática AdSense', partnerActive: false, partnerName: 'Google AdSense', coupon: '', link: '' },
+        { id: 'adsense_table', name: 'AdSense - Tabla DPV', location: 'Pie de Tabla Completa', type: 'Programática AdSense', partnerActive: false, partnerName: 'Google AdSense', coupon: '', link: '' },
+        { id: 'adsense_quiz', name: 'AdSense - Trivia Native', location: 'Native Ad en Trivia', type: 'Programática AdSense', partnerActive: false, partnerName: 'Google AdSense', coupon: '', link: '' },
+        { id: 'sponsor_riego', name: 'Sponsor - Nutrientes EC', location: 'Módulo de Riego', type: 'Patrocinio Directo', partnerActive: true, partnerName: 'Biobizz Organic', coupon: 'BIOBISHADOW', link: '' },
+        { id: 'sponsor_esporas', name: 'Sponsor - Extractor Rocío', location: 'Reloj de Esporas', type: 'Patrocinio Directo', partnerActive: true, partnerName: 'Garden Highpro', coupon: 'SHADOWAIR', link: '' },
+        { id: 'sponsor_led', name: 'Sponsor - Iluminación LED', location: 'Optimizador PPFD', type: 'Patrocinio Directo', partnerActive: true, partnerName: 'Mars Hydro LED', coupon: 'LEDSHADOW', link: '' },
+        { id: 'sponsor_seeds', name: 'Sponsor - Semillas Dosel', location: 'Ficha de Genética', type: 'Banco de Semillas', partnerActive: true, partnerName: 'Shadow Seeds', coupon: 'SHADOWGG', link: '' }
+      ];
+    }
+  });
+
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+  const [selectedAdSlotForContact, setSelectedAdSlotForContact] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dpv_pro_ad_slots', JSON.stringify(adSlots));
+    } catch (err) {
+      console.warn("Storage blocked:", err);
+    }
+  }, [adSlots]);
+
+  const toggleAdSlot = (slotId) => {
+    setAdSlots(prev => prev.map(slot => 
+      slot.id === slotId ? { ...slot, partnerActive: !slot.partnerActive } : slot
+    ));
+  };
+
+  const triggerSponsorContact = (slotId) => {
+    const slot = adSlots.find(s => s.id === slotId);
+    setSelectedAdSlotForContact(slot);
+    setIsSponsorModalOpen(true);
+  };
+
   // Estado de Intersticial Científico (Ads Optimizer)
   const [interstitial, setInterstitial] = useState({ 
     active: false, 
@@ -196,14 +246,35 @@ function App() {
   };
 
   // Helper para Banners de Publicidad Programática AdSense (Ads Optimizer)
-  const renderAdSenseBanner = (slotName) => (
-    <div className="adsense-sandbox-banner">
-      <span className="adsense-label">Publicidad Programática</span>
-      <div className="adsense-content">
-        🌿 <span className="adsense-sponsor-name">Anuncio AdSense ({slotName})</span>: ¿Deseas maximizar tu rendimiento y optimizar el DPV? Compra en nuestros grow shops autorizados y marcas recomendadas usando cupones exclusivos de DPV PRO.
+  const renderAdSenseBanner = (slotName) => {
+    const getSlotId = (name) => {
+      if (name.includes("Calculadora")) return "adsense_calc";
+      if (name.includes("Tabla")) return "adsense_table";
+      return "adsense_quiz";
+    };
+    const slotId = getSlotId(slotName);
+    const slot = adSlots.find(s => s.id === slotId) || { partnerActive: false, name: slotName };
+
+    if (slot.partnerActive) {
+      return (
+        <div className="adsense-sandbox-banner" style={{ border: '1px solid rgba(0, 255, 136, 0.3)', background: 'rgba(0, 255, 136, 0.02)' }}>
+          <span className="adsense-label" style={{ background: 'rgba(0, 255, 136, 0.2)', color: '#00ff88', border: '1px solid rgba(0, 255, 136, 0.3)' }}>Google AdSense - Partner Activo</span>
+          <div className="adsense-content">
+            🔥 <span className="adsense-sponsor-name" style={{ color: '#00ff88' }}>{slot.partnerName}</span>: Optimización programática activa en tu sala. Visita a nuestros grow shops asociados de DPV PRO para validar tus cupones de cultivo de precisión.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="adsense-sandbox-banner" onClick={() => triggerSponsorContact(slotId)} style={{ cursor: 'pointer' }}>
+        <span className="adsense-label">Publicidad Programática - Disponible</span>
+        <div className="adsense-content">
+          📢 <span className="adsense-sponsor-name" style={{ color: '#ffd600' }}>¡Tu Marca Aquí!</span>: Este espacio en <strong>{slot.location}</strong> recibe miles de impresiones diarias de cultivadores. Haz clic aquí para anunciar tu grow shop o producto.
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const selectedStrain = useMemo(() => {
     return BOTANICAL_ARCHETYPES.find(s => s.id === activeStrain) || BOTANICAL_ARCHETYPES[0];
@@ -618,6 +689,133 @@ function App() {
         }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#00FF88', display: 'inline-block', boxShadow: '0 0 8px #00FF88' }} className="icon-pulse" />
           <span>SISTEMA DE ASISTENCIA POR VOZ ACTIVO (ALERTA AUTOMÁTICA DETECTADA)</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPrinting) {
+    return (
+      <div className="print-report-only" style={{ display: 'block', background: '#ffffff', color: '#000000', padding: '30px', minHeight: '100vh', width: '100%' }}>
+        <div style={{ borderBottom: '3px solid #000', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ textAlign: 'left' }}>
+            <h1 style={{ fontSize: '2rem', margin: 0, color: '#000', fontFamily: 'sans-serif', fontWeight: 'bold' }}>DPV PRO - AUDITORÍA INTEGRAL DE CULTIVO</h1>
+            <span style={{ fontSize: '0.9rem', color: '#555' }}>Reporte de Precisión y Calibración Fisiológica Vegetal (Offline Físico)</span>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <strong style={{ fontSize: '1.25rem', display: 'block', color: '#000' }}>{adminConfig.growShops[0].name}</strong>
+            <span style={{ fontSize: '0.85rem', color: '#555' }}>Punto de Calibración DPV Autorizado</span>
+          </div>
+        </div>
+
+        {/* Informacion de la sesion */}
+        <div style={{ border: '1px solid #000', padding: '12px', background: '#f5f5f5', marginBottom: '20px', fontSize: '0.85rem', textAlign: 'left', color: '#000' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>📅 <strong>Fecha del Reporte:</strong> {new Date().toLocaleDateString('es-ES')}</div>
+            <div>🧬 <strong>Genética / Perfil Activo:</strong> {selectedStrain.name}</div>
+            <div>🌱 <strong>Etapa de Desarrollo:</strong> {targets[stage].name}</div>
+            <div>📊 <strong>DPV Diurno Promedio:</strong> <strong>{vpd.toFixed(2)} kPa</strong> ({status.label})</div>
+          </div>
+        </div>
+
+        {/* Recorrer las 7 secciones de auditoría para la versión impresa */}
+        {Object.keys(auditSections).map((key) => {
+          const sec = auditSections[key];
+          return (
+            <div key={key} style={{ marginBottom: '25px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', paddingBottom: '8px', marginBottom: '10px' }}>
+                <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {sec.title}
+                </h3>
+                <span className={`badge-audit ${sec.isSet ? 'badge-audit-set' : 'badge-audit-unset'}`} style={{ border: '1px solid #ccc', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  {sec.badge}
+                </span>
+              </div>
+
+              {/* Cartel / Alerta Impreso */}
+              <div className={`audit-alert-card ${sec.isSet ? 'set' : 'unset'}`} style={{ padding: '10px', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '10px', fontWeight: 'bold', background: sec.isSet ? '#e2f0d9' : '#fce4d6', color: sec.isSet ? '#385723' : '#c65911' }}>
+                {sec.alertText}
+              </div>
+
+              {/* Tabla Estructurada de Alto Contraste */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#000' }}>
+                <thead>
+                  <tr style={{ background: '#eee', borderBottom: '2px solid #000' }}>
+                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Parámetro / Variable</th>
+                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Valor Configurado</th>
+                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Rango / Referencia Científica</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sec.data.map((row, index) => (
+                    <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
+                      <td style={{ padding: '6px', border: '1px solid #ddd' }}>{row.name}</td>
+                      <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd', color: '#000' }}>{row.value}</td>
+                      <td style={{ padding: '6px', border: '1px solid #ddd', color: '#555' }}>{row.target}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
+
+        {/* Equipamientos Activos */}
+        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
+          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🔌 Carga y Simulación de Dispositivos Eléctricos</h3>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {Object.keys(activeDevices).map(key => (
+              <span 
+                key={key} 
+                className={`badge-audit ${activeDevices[key] ? 'badge-audit-set' : 'badge-audit-unset'}`}
+                style={{ fontSize: '0.75rem', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '4px', background: activeDevices[key] ? '#d4edda' : '#f8d7da', color: activeDevices[key] ? '#155724' : '#721c24' }}
+              >
+                {key === 'lights' ? '💡 Luces' : key === 'humidifier' ? '💧 Humidificador' : key === 'dehumidifier' ? '❄️ Deshum.' : key === 'extractor' ? '🌪️ Extractor' : key === 'heater' ? '🔥 Calefactor' : '❄️ AC'}
+                : {activeDevices[key] ? 'Activo' : 'Inactivo'}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Cupones de descuento activos */}
+        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
+          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🎫 Cupones Activos y Beneficios en Tiendas</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: '#000' }}>
+            <thead>
+              <tr style={{ background: '#eee', borderBottom: '1px solid #000' }}>
+                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Socio Comercial / Marca</th>
+                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Código de Cupón</th>
+                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Beneficio Aplicado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛍️ {adminConfig.growShops[0].name} (Socio Físico)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.growShops[0].coupon}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>10% de Descuento en compra de fertilizantes y sustratos</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>💡 {adSlots.find(s => s.id === 'sponsor_led')?.partnerName || 'Mars Hydro'} (Paneles LED)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adSlots.find(s => s.id === 'sponsor_led')?.coupon || 'LEDSHADOW'}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>Envío gratis + Dimer de calibración inteligente bonificado</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🌪️ {adSlots.find(s => s.id === 'sponsor_esporas')?.partnerName || 'Garden Highpro'} (Ventilación)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adSlots.find(s => s.id === 'sponsor_esporas')?.coupon || 'SHADOWAIR'}</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>5% OFF en extractores Proline de alto caudal</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛡️ BioGreen Fungi (Preventivo)</td>
+                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>SHADOWFUNGI</td>
+                <td style={{ padding: '6px', border: '1px solid #ddd' }}>15% OFF en preventivo orgánico de botrytis</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ borderTop: '2px solid #000', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#555', pageBreakInside: 'avoid' }}>
+          <p>Reporte oficial de auditoría emitido de forma fiable y segura por <strong>DPV PRO v1.0</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
+          <p>Presenta este reporte en formato impreso o digital en tu Grow Shop aliado para validar tus cupones y la calibración del cultivo.</p>
         </div>
       </div>
     );
@@ -1226,6 +1424,9 @@ function App() {
                   <button className={`pro-nav-btn ${activeProTool === 'reporte' ? 'active' : ''}`} onClick={() => setActiveProTool('reporte')}>
                     📊 Ficha y Reporte
                   </button>
+                  <button className={`pro-nav-btn ${activeProTool === 'anuncios' ? 'active' : ''}`} onClick={() => setActiveProTool('anuncios')}>
+                    ⚙️ Panel de Anuncios
+                  </button>
                 </nav>
               </aside>
 
@@ -1434,25 +1635,40 @@ function App() {
                         {selectedStrain.desc}
                       </p>
                       
-                      {/* BANCO DE SEMILLAS PATROCINADO (Dinámico desde adminConfig) */}
+                      {/* BANCO DE SEMILLAS PATROCINADO (Dinámico desde adminConfig / adSlots) */}
                       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '12px' }}>
                         <span style={{ fontSize: '0.75rem', color: '#00FF88', fontWeight: 'bold', display: 'block', marginBottom: '8px', letterSpacing: '0.5px' }}>
                           🌱 VARIEDADES COMERCIALES RECOMENDADAS:
                         </span>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                          {adminConfig.seedBanks.filter(sb => sb.archetype === genetics).map(sb => (
-                            <div key={sb.id} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                              <div>
-                                <strong style={{ fontSize: '0.8rem', color: '#fff', display: 'block' }}>{sb.name}</strong>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Banco: <strong>{sb.bank}</strong></span>
+                        {(() => {
+                          const seedsSlot = adSlots.find(s => s.id === 'sponsor_seeds');
+                          if (seedsSlot.partnerActive) {
+                            return (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                                {adminConfig.seedBanks.filter(sb => sb.archetype === genetics).map(sb => (
+                                  <div key={sb.id} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div>
+                                      <strong style={{ fontSize: '0.8rem', color: '#fff', display: 'block' }}>{sb.name}</strong>
+                                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Banco: <strong>{sb.bank}</strong></span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '6px' }}>
+                                      <span style={{ fontSize: '0.65rem', color: '#FFD600' }}>Cupón: <strong>{sb.coupon}</strong></span>
+                                      <a href="#" onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_seeds'); }} style={{ fontSize: '0.7rem', color: '#00FF88', textDecoration: 'none', fontWeight: 'bold' }}>Ver Genética ↗</a>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '6px' }}>
-                                <span style={{ fontSize: '0.65rem', color: '#FFD600' }}>Cupón: <strong>{sb.coupon}</strong></span>
-                                <a href={sb.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: '#00FF88', textDecoration: 'none', fontWeight: 'bold' }}>Ver Genética ↗</a>
-                              </div>
+                            );
+                          }
+                          return (
+                            <div onClick={() => triggerSponsorContact('sponsor_seeds')} style={{ background: 'rgba(0,255,136,0.02)', border: '1px dashed rgba(0,255,136,0.2)', padding: '15px', borderRadius: '10px', cursor: 'pointer', textAlign: 'center' }}>
+                              <span style={{ fontSize: '0.8rem', color: '#00ff88', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>📢 Espacio para Banco de Semillas Disponible</span>
+                              <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                                ¡Anuncia tus genéticas aquí! Este panel dinámico se segmenta según la fisiología foliar seleccionada por el cultivador. Haz clic para contactarnos.
+                              </p>
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -1867,7 +2083,7 @@ function App() {
                             {sporeTimer < 300 && (
                               <div style={{
                                 display: 'flex',
-                                justifyContent: 'space-between',
+                                justifyContext: 'space-between',
                                 alignItems: 'center',
                                 background: 'rgba(255, 77, 77, 0.05)',
                                 border: '1px solid rgba(255, 77, 77, 0.15)',
@@ -1878,15 +2094,14 @@ function App() {
                                 textAlign: 'left'
                               }}>
                                 <div style={{ flex: 1 }}>
-                                  <span style={{ fontSize: '0.65rem', color: '#FF4D4D', fontWeight: 'bold', display: 'block' }}>🛡️ PROTECCIÓN SANITARIA EXPRESS:</span>
+                                  <span style={{ fontSize: '0.65rem', color: '#FF4D4D', fontWeight: 'bold', display: 'block' }}>🛡️ PROTECCIÓN SANITARIA:</span>
                                   <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.fungicide.brand} - {adminConfig.sponsors.fungicide.product}</strong>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
                                   <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.fungicide.coupon}</strong></span>
                                   <a 
-                                    href={adminConfig.sponsors.fungicide.link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_seeds'); }}
                                     className="console-btn-glow"
                                     style={{ 
                                       background: '#FFD600', 
@@ -1899,54 +2114,77 @@ function App() {
                                       marginTop: '2px'
                                     }}
                                   >
-                                    Comprar Preventivo ↗
+                                    Ver Preventivo ↗
                                   </a>
                                 </div>
                               </div>
                             )}
 
                             {/* Botón Extractor Express (v1.0 Ads Optimizer) */}
-                            {vpd < 0.3 && (
-                              <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                background: 'rgba(0, 240, 255, 0.05)',
-                                border: '1px solid rgba(0, 240, 255, 0.15)',
-                                padding: '10px 14px',
-                                borderRadius: '10px',
-                                marginBottom: '12px',
-                                animation: 'pulseGlow 2.5s infinite ease-in-out',
-                                textAlign: 'left'
-                              }}>
-                                <div style={{ flex: 1 }}>
-                                  <span style={{ fontSize: '0.65rem', color: '#00F0FF', fontWeight: 'bold', display: 'block' }}>🌪️ MITIGACIÓN DE HUMEDAD URGENTE:</span>
-                                  <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.ventilation.brand} - {adminConfig.sponsors.ventilation.model}</strong>
-                                  <p style={{ margin: '2px 0 0 0', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>El DPV es críticamente bajo. Renueva el aire de la sala cada 60s para evacuar el agua líquida libre.</p>
+                            {vpd < 0.3 && (() => {
+                              const esporasSlot = adSlots.find(s => s.id === 'sponsor_esporas');
+                              if (esporasSlot.partnerActive) {
+                                return (
+                                  <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    background: 'rgba(0, 240, 255, 0.05)',
+                                    border: '1px solid rgba(0, 240, 255, 0.15)',
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    marginBottom: '12px',
+                                    animation: 'pulseGlow 2.5s infinite ease-in-out',
+                                    textAlign: 'left'
+                                  }}>
+                                    <div style={{ flex: 1 }}>
+                                      <span style={{ fontSize: '0.65rem', color: '#00F0FF', fontWeight: 'bold', display: 'block' }}>🌪️ MITIGACIÓN DE HUMEDAD URGENTE:</span>
+                                      <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.ventilation.brand} - {adminConfig.sponsors.ventilation.model}</strong>
+                                      <p style={{ margin: '2px 0 0 0', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>El DPV es críticamente bajo. Renueva el aire de la sala cada 60s para evacuar el agua líquida libre.</p>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
+                                      <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.ventilation.coupon}</strong></span>
+                                      <a 
+                                        href="#" 
+                                        onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_esporas'); }}
+                                        className="console-btn-glow"
+                                        style={{ 
+                                          background: '#00F0FF', 
+                                          color: '#050805', 
+                                          padding: '4px 10px', 
+                                          borderRadius: '6px', 
+                                          fontSize: '0.7rem', 
+                                          fontWeight: 'bold', 
+                                          textDecoration: 'none',
+                                          marginTop: '2px'
+                                        }}
+                                      >
+                                        Ver Extractor ↗
+                                      </a>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div 
+                                  onClick={() => triggerSponsorContact('sponsor_esporas')}
+                                  style={{
+                                    background: 'rgba(255, 214, 0, 0.03)',
+                                    border: '1px dashed rgba(255, 214, 0, 0.2)',
+                                    padding: '12px',
+                                    borderRadius: '10px',
+                                    marginBottom: '12px',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '0.75rem', color: '#ffd600', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>📢 Espacio para Extracción / Humedad Disponible</span>
+                                  <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                    ¡Anuncia tus extractores o deshumidificadores aquí! Se activa automáticamente ante niveles de humedad críticos. Haz clic para contactarnos.
+                                  </p>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
-                                  <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.ventilation.coupon}</strong></span>
-                                  <a 
-                                    href={adminConfig.sponsors.ventilation.link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="console-btn-glow"
-                                    style={{ 
-                                      background: '#00F0FF', 
-                                      color: '#050805', 
-                                      padding: '4px 10px', 
-                                      borderRadius: '6px', 
-                                      fontSize: '0.7rem', 
-                                      fontWeight: 'bold', 
-                                      textDecoration: 'none',
-                                      marginTop: '2px'
-                                    }}
-                                  >
-                                    Ver Extractor ↗
-                                  </a>
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })()}
 
                             <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
                               <div style={{
@@ -2051,47 +2289,74 @@ function App() {
                       })()}
 
                       {/* PUBLICIDAD CONTEXTUAL DIRECTA DE ILUMINACIÓN LED (v1.0 Ads Optimizer) */}
-                      <div className="advertisement-card-premium optimal-ec" style={{ marginTop: '20px' }}>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <strong style={{ fontSize: '0.85rem', color: '#00f0ff' }}>
-                              💡 ¿Quieres maximizar la fotosíntesis sin aumentar el estrés térmico?
-                            </strong>
-                            <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-secondary)' }}>
-                              ILUMINACIÓN EFICIENTE
-                            </span>
+                      {(() => {
+                        const ledSlot = adSlots.find(s => s.id === 'sponsor_led') || { partnerActive: true, partnerName: 'Mars Hydro LED', coupon: 'LEDSHADOW' };
+                        if (ledSlot.partnerActive) {
+                          return (
+                            <div className="advertisement-card-premium optimal-ec" style={{ marginTop: '20px' }}>
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                  <strong style={{ fontSize: '0.85rem', color: '#00f0ff' }}>
+                                    💡 ¿Quieres maximizar la fotosíntesis sin aumentar el estrés térmico?
+                                  </strong>
+                                  <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                                    ILUMINACIÓN EFICIENTE
+                                  </span>
+                                </div>
+                                <p style={{ margin: '0 0 15px 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                  Bajo iluminación tradicional de Sodio (HPS) o LED ineficiente, el calor disipado cierra los estomas foliares en un <strong>{((1 - calculatePhotosyntheticEfficiency(calculateStomatalConductance(vpd, lightIntensity, genetics), ppfdInput).efficiency / 100) * 100).toFixed(0)}%</strong>. Cambia al panel {ledSlot.partnerName} con dimmer de alta precisión y espectro fotosintético puro para cosechar flores resinosas sin elevar la temperatura ambiental.
+                                </p>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block' }}>RECOMENDADO POR DPV PRO:</span>
+                                  <strong style={{ fontSize: '0.8rem', color: '#fff' }}>{ledSlot.partnerName}</strong>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                  {ledSlot.coupon && (
+                                    <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{ledSlot.coupon}</strong></span>
+                                  )}
+                                  <a 
+                                    href="#" 
+                                    onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_led'); }}
+                                    className="console-btn-glow"
+                                    style={{ 
+                                      background: '#00f0ff', 
+                                      color: '#050805', 
+                                      padding: '4px 10px', 
+                                      borderRadius: '6px', 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 'bold', 
+                                      textDecoration: 'none'
+                                    }}
+                                  >
+                                    Ver Panel LED ↗
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div 
+                            onClick={() => triggerSponsorContact('sponsor_led')} 
+                            style={{ 
+                              background: 'rgba(0, 240, 255, 0.02)', 
+                              border: '1px dashed rgba(0, 240, 255, 0.2)', 
+                              padding: '15px', 
+                              borderRadius: '10px', 
+                              cursor: 'pointer', 
+                              textAlign: 'center',
+                              marginTop: '20px'
+                            }}
+                          >
+                            <span style={{ fontSize: '0.8rem', color: '#00f0ff', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>💡 Espacio para Sponsor de Iluminación LED Disponible</span>
+                            <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                              ¡Anuncia tus paneles de iluminación aquí! Este panel se activa contextualmente basándose en la eficiencia fotosintética y el DPV diurno del cultivo. Haz clic para contactarnos.
+                            </p>
                           </div>
-                          <p style={{ margin: '0 0 15px 0', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                            Bajo iluminación tradicional de Sodio (HPS) o LED ineficiente, el calor disipado cierra los estomas foliares en un <strong>{((1 - calculatePhotosyntheticEfficiency(calculateStomatalConductance(vpd, lightIntensity, genetics), ppfdInput).efficiency / 100) * 100).toFixed(0)}%</strong>. Cambia al panel Mars Hydro FC-3000 con dimmer de alta precisión y espectro fotosintético puro para cosechar flores resinosas sin elevar la temperatura ambiental.
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
-                          <div>
-                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block' }}>RECOMENDADO POR DPV PRO:</span>
-                            <strong style={{ fontSize: '0.8rem', color: '#fff' }}>{adminConfig.sponsors.led.brand} - {adminConfig.sponsors.led.model}</strong>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                            <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.led.coupon}</strong> (35% Ahorro)</span>
-                            <a 
-                              href={adminConfig.sponsors.led.link} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="console-btn-glow"
-                              style={{ 
-                                background: '#00f0ff', 
-                                color: '#050805', 
-                                padding: '4px 10px', 
-                                borderRadius: '6px', 
-                                fontSize: '0.7rem', 
-                                fontWeight: 'bold', 
-                                textDecoration: 'none'
-                              }}
-                            >
-                              Ver Panel LED ↗
-                            </a>
-                          </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
 
                     {/* RANGOS DE DPV OPTIMIZADOS APLICADOS */}
@@ -2200,17 +2465,39 @@ function App() {
                               {vpd > 1.2 && "⚠️ DPV ALTO: Alta demanda hídrica. Las plantas pierden agua rápidamente para no quemarse. Necesitarás regar con mayor frecuencia o aumentar el volumen diario para evitar marchitamiento estresante."}
                             </div>
                           </div>
- 
+
                           {/* PUBLICIDAD CONTEXTUAL DIRECTA DE NUTRIENTES (v1.0 Ads Optimizer) */}
                           {(() => {
+                            const riegoSlot = adSlots.find(s => s.id === 'sponsor_riego');
+                            if (!riegoSlot.partnerActive) {
+                              return (
+                                <div 
+                                  onClick={() => triggerSponsorContact('sponsor_riego')}
+                                  style={{
+                                    background: 'rgba(0, 240, 255, 0.03)',
+                                    border: '1px dashed rgba(0, 240, 255, 0.2)',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    marginTop: '20px',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '0.8rem', color: '#00f0ff', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>📢 Espacio para Sponsor de Nutrientes Disponible</span>
+                                  <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                                    ¡Anuncia tus fertilizantes y medidores aquí! Se segmenta de forma inteligente según la electroconductividad del riego. Haz clic para contactarnos.
+                                  </p>
+                                </div>
+                              );
+                            }
+
                             let adClass = 'optimal-ec';
                             let adTitle = 'Nutrición Orgánica en Rango Óptimo 🟢';
                             let adBrand = adminConfig.fertilizers.lowEc.brand;
                             let adProduct = adminConfig.fertilizers.lowEc.product;
                             let adDesc = 'Tu sustrato está en el rango de conductividad de precisión. Para mantener el crecimiento explosivo y la asimilación estomática perfecta, añade Bio-Grow de forma 100% orgánica.';
                             let adCoupon = adminConfig.fertilizers.lowEc.coupon;
-                            let adLink = adminConfig.fertilizers.lowEc.link;
- 
+
                             if (soilEc < 1.2) {
                               adClass = 'low-ec';
                               adTitle = '⚠️ CONDUCTIVIDAD BAJA: Crecimiento Lento';
@@ -2222,9 +2509,8 @@ function App() {
                               adProduct = adminConfig.fertilizers.highEc.product;
                               adDesc = `¡Conductividad crítica de ${soilEc.toFixed(1)} mS/cm! Las raíces experimentan estrés osmótico extremo. Riega con agua sola y aplica Sensi Flush urgentemente para lavar el medio de cultivo.`;
                               adCoupon = adminConfig.fertilizers.highEc.coupon;
-                              adLink = adminConfig.fertilizers.highEc.link;
                             }
- 
+
                             return (
                               <div className={`advertisement-card-premium ${adClass}`} style={{ marginTop: '20px' }}>
                                 <div>
@@ -2248,9 +2534,8 @@ function App() {
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                                     <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adCoupon}</strong></span>
                                     <a 
-                                      href={adLink} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
+                                      href="#" 
+                                      onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_riego'); }}
                                       className="console-btn-glow"
                                       style={{ 
                                         background: adClass === 'high-ec' ? '#ff4d4d' : '#00f0ff', 
@@ -3012,7 +3297,13 @@ function App() {
                               "Compilando Auditoría Integral de Cultivo y calibraciones térmicas...",
                               `${adminConfig.sensorPartners[1].name} (Sonda WiFi Ruuvi de Alta Precisión)`,
                               adminConfig.sensorPartners[1].coupon,
-                              () => window.print()
+                              () => {
+                                setIsPrinting(true);
+                                setTimeout(() => {
+                                  window.print();
+                                  setIsPrinting(false);
+                                }, 300);
+                              }
                             );
                           }}
                           className="console-btn-glow"
@@ -3036,6 +3327,226 @@ function App() {
                           * Genera una copia física u offline del estado completo de tu cultivo para tu historial de sala.
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeProTool === 'anuncios' && (
+                  <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                    <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                      <div>
+                        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#00FF88', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          ⚙️ Consola de Administración de Publicidades
+                        </h3>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                          Controla en tiempo real los 7 espacios publicitarios de DPV PRO. Modifica los códigos de cupón, nombres de marca y enlaces para tus socios comerciales.
+                        </p>
+                      </div>
+                      
+                      <a 
+                        href="mailto:administracion@dpvpro.com?subject=Consulta%20de%20Patrocinio%20en%20DPV%20PRO&body=Hola!%20Deseo%20obtener%20más%20información%20sobre%20los%20planes%20y%20tarifas%20de%20patrocinio%20para%20los%20espacios%20publicitarios%20de%20DPV%20PRO."
+                        className="console-btn-glow"
+                        style={{ 
+                          background: 'rgba(0, 255, 136, 0.1)', 
+                          border: '1px solid #00FF88', 
+                          color: '#00FF88',
+                          padding: '10px 20px',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          fontWeight: 'bold',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        📧 Solicitar Información de Patrocinio
+                      </a>
+                    </div>
+
+                    {/* Métricas de Publicidad */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+                      <div className="glow-border glass" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', textAlign: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>TOTAL ESPACIOS</span>
+                        <strong style={{ fontSize: '1.75rem', color: '#00f0ff', fontFamily: 'monospace' }}>{adSlots.length}</strong>
+                      </div>
+                      <div className="glow-border glass" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', textAlign: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>PARTNERS ACTIVOS</span>
+                        <strong style={{ fontSize: '1.75rem', color: '#00FF88', fontFamily: 'monospace' }}>{adSlots.filter(s => s.partnerActive).length}</strong>
+                      </div>
+                      <div className="glow-border glass" style={{ padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', textAlign: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>ESPACIOS DISPONIBLES</span>
+                        <strong style={{ fontSize: '1.75rem', color: '#FFD600', fontFamily: 'monospace' }}>{adSlots.filter(s => !s.partnerActive).length}</strong>
+                      </div>
+                    </div>
+
+                    {/* Listado de Espacios */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      {adSlots.map(slot => (
+                        <div key={slot.id} className="glow-border glass" style={{ 
+                          padding: '20px', 
+                          borderRadius: '16px', 
+                          border: slot.partnerActive ? '1px solid rgba(0, 255, 136, 0.15)' : '1px solid rgba(255, 214, 0, 0.15)',
+                          background: 'rgba(0,0,0,0.3)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '15px'
+                        }}>
+                          {/* Fila 1: Cabecera del Slot */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                            <div>
+                              <strong style={{ fontSize: '1.05rem', color: '#fff', display: 'block' }}>{slot.name}</strong>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                📍 Ubicación: <strong>{slot.location}</strong> | 🏷️ Tipo: <strong>{slot.type}</strong>
+                              </span>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <span style={{ 
+                                fontSize: '0.7rem', 
+                                padding: '4px 8px', 
+                                borderRadius: '6px', 
+                                fontWeight: 'bold',
+                                background: slot.partnerActive ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 214, 0, 0.1)',
+                                color: slot.partnerActive ? '#00FF88' : '#FFD600',
+                                border: slot.partnerActive ? '1px solid rgba(0, 255, 136, 0.2)' : '1px solid rgba(255, 214, 0, 0.2)'
+                              }}>
+                                {slot.partnerActive ? '🟢 Partner Oficial Activo' : '🟡 Sandbox (Espacio Disponible)'}
+                              </span>
+                              
+                              {/* Botón de Toggle */}
+                              <button 
+                                onClick={() => toggleAdSlot(slot.id)}
+                                className="console-btn-glow"
+                                style={{
+                                  background: slot.partnerActive ? '#FF4D4D' : '#00FF88',
+                                  color: '#050805',
+                                  border: 'none',
+                                  padding: '5px 12px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {slot.partnerActive ? 'Desactivar Partner' : 'Activar Partner'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Fila 2: Configuración Form */}
+                          <div style={{ 
+                            background: 'rgba(255,255,255,0.02)', 
+                            border: '1px solid rgba(255,255,255,0.05)', 
+                            padding: '15px', 
+                            borderRadius: '12px',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                            gap: '12px'
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>NOMBRE DEL SOCIO COMERCIAL:</label>
+                              <input 
+                                type="text"
+                                value={slot.partnerName}
+                                onChange={(e) => {
+                                  setAdSlots(prev => prev.map(s => 
+                                    s.id === slot.id ? { ...s, partnerName: e.target.value } : s
+                                  ));
+                                }}
+                                style={{
+                                  background: 'rgba(0,0,0,0.5)',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  color: '#fff',
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  outline: 'none'
+                                }}
+                                placeholder="Ej: Mars Hydro LED"
+                              />
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>CÓDIGO DE CUPÓN:</label>
+                              <input 
+                                type="text"
+                                value={slot.coupon}
+                                onChange={(e) => {
+                                  setAdSlots(prev => prev.map(s => 
+                                    s.id === slot.id ? { ...s, coupon: e.target.value } : s
+                                  ));
+                                }}
+                                style={{
+                                  background: 'rgba(0,0,0,0.5)',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  color: '#fff',
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  outline: 'none'
+                                }}
+                                placeholder="Ej: LEDSHADOW"
+                              />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>REDIRECCIÓN (SEGURO/INTERNO):</label>
+                              <select
+                                value={slot.link ? 'custom' : 'modal'}
+                                onChange={(e) => {
+                                  const val = e.target.value === 'modal' ? '' : 'https://';
+                                  setAdSlots(prev => prev.map(s => 
+                                    s.id === slot.id ? { ...s, link: val } : s
+                                  ));
+                                }}
+                                style={{
+                                  background: 'rgba(0,0,0,0.5)',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  color: '#fff',
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  outline: 'none',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <option value="modal">Redirección Interna DPV PRO (Seguro - Recomendado)</option>
+                                <option value="custom">URL Externa Customizada (Administrador)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Fila 3: Acciones */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                              {slot.partnerActive 
+                                ? `🔗 Redirección activa: ${slot.link ? slot.link : 'Modal Seguro de Lead Capture'}` 
+                                : `🔗 Sandbox: Clic redirige a 'Futura Publicidad' + mailto de consulta`
+                              }
+                            </span>
+                            
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => triggerSponsorContact(slot.id)}
+                                className="console-btn-glow"
+                                style={{
+                                  background: 'rgba(0, 240, 255, 0.1)',
+                                  border: '1px solid rgba(0, 240, 255, 0.3)',
+                                  color: '#00f0ff',
+                                  padding: '5px 12px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                🔍 Probar Vista (Modal)
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -3361,9 +3872,12 @@ function App() {
                   <strong style={{ fontSize: '0.9rem', color: '#FFD600', letterSpacing: '0.5px' }}>{ledSponsor.coupon}</strong>
                 </div>
                 <a 
-                  href={ledSponsor.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                  href="#" 
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    setShowLedSavingsModal(false); 
+                    triggerSponsorContact('sponsor_led'); 
+                  }} 
                   className="console-btn-glow"
                   style={{
                     background: '#00FF88',
@@ -3382,6 +3896,109 @@ function App() {
           </div>
         );
       })()}
+
+      {/* Modal de Contacto para Espacios Publicitarios (Sponsor Lead Capture Modal) */}
+      {isSponsorModalOpen && selectedAdSlotForContact && (
+        <div className="modal-overlay" onClick={() => setIsSponsorModalOpen(false)}>
+          <div className="modal-content glass glow-border" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', textAlign: 'left' }}>
+            <button className="close-modal-btn" onClick={() => setIsSponsorModalOpen(false)}>
+              <X size={20} />
+            </button>
+            
+            <div className="modal-header" style={{ textAlign: 'center' }}>
+              {selectedAdSlotForContact.id === 'sponsor_seeds' ? (
+                <>
+                  <span style={{ fontSize: '3rem' }}>🌱</span>
+                  <h2 className="glow-text" style={{ color: '#00FF88' }}>Futura Publicidad de Semillas</h2>
+                  <p>Espacio reservado para bancos de semillas y criadores oficiales.</p>
+                </>
+              ) : selectedAdSlotForContact.id === 'sponsor_led' ? (
+                <>
+                  <span style={{ fontSize: '3rem' }}>💡</span>
+                  <h2 className="glow-text" style={{ color: '#00f0ff' }}>Futura Publicidad - Iluminación LED</h2>
+                  <p>Espacio de iluminación LED de alta eficiencia y espectro completo.</p>
+                </>
+              ) : selectedAdSlotForContact.id === 'sponsor_riego' ? (
+                <>
+                  <span style={{ fontSize: '3rem' }}>🧪</span>
+                  <h2 className="glow-text" style={{ color: '#00f0ff' }}>Futuro Espacio Publicitario</h2>
+                  <p>Espacio de nutrición y dosificación de EC en riego.</p>
+                </>
+              ) : selectedAdSlotForContact.id === 'sponsor_esporas' ? (
+                <>
+                  <span style={{ fontSize: '3rem' }}>🌪️</span>
+                  <h2 className="glow-text" style={{ color: '#FFD600' }}>Futuro Espacio Publicitario</h2>
+                  <p>Espacio de climatización y control higrométrico en sala.</p>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '3rem' }}>📢</span>
+                  <h2 className="glow-text" style={{ color: '#00FF88' }}>{selectedAdSlotForContact.name}</h2>
+                  <p>Espacio publicitario disponible para marcas del sector.</p>
+                </>
+              )}
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', fontSize: '0.85rem' }}>
+                <div>📍 <strong>Ubicación en App:</strong> <span style={{ color: '#00FF88' }}>{selectedAdSlotForContact.location}</span></div>
+                <div>🏷️ <strong>Categoría del Espacio:</strong> {selectedAdSlotForContact.type}</div>
+                <div>👤 <strong>Estado Comercial:</strong> {selectedAdSlotForContact.partnerActive ? 'Partner Demo Configurado' : 'Disponible para Patrocinio Directo'}</div>
+                {selectedAdSlotForContact.partnerActive && (
+                  <div>🏢 <strong>Marca Sugerida:</strong> {selectedAdSlotForContact.partnerName}</div>
+                )}
+              </div>
+              <p style={{ margin: '15px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Este espacio publicitario está optimizado contextualmente. Aparece ante métricas específicas del cultivo del usuario (temperatura, DPV, conductividad del riego o estomas de la hoja), garantizando un impacto del 100% en la canopia decisoria de los cultivadores.
+              </p>
+            </div>
+
+            <div style={{ background: 'rgba(0, 255, 136, 0.05)', border: '1px solid rgba(0, 255, 136, 0.15)', padding: '15px', borderRadius: '12px', marginBottom: '20px', textAlign: 'center' }}>
+              <strong style={{ color: '#00FF88', display: 'block', marginBottom: '6px', fontSize: '0.85rem' }}>📢 ¿Quieres publicitar tu marca aquí?</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Envíanos tu propuesta. Ofrecemos segmentación por geolocalización, estadísticas de clicks y cupones de descuento directos.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+              <button 
+                onClick={() => setIsSponsorModalOpen(false)}
+                className="console-btn-glow"
+                style={{ 
+                  background: 'rgba(255,255,255,0.05)', 
+                  color: '#fff', 
+                  padding: '8px 16px', 
+                  borderRadius: '8px', 
+                  fontSize: '0.8rem', 
+                  fontWeight: 'bold', 
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+              >
+                Cerrar
+              </button>
+              
+              <a 
+                href={`mailto:administracion@dpvpro.com?subject=Consulta%20Publicidad%20DPV%20PRO%20-%20Slot%20${selectedAdSlotForContact.id}&body=Hola%20Administraci%C3%B3n%20de%20DPV%20PRO,%0A%0AEstoy%20interesado%20en%20patrocinar%20el%20espacio%20publicitario%20"${selectedAdSlotForContact.name}"%20en%20la%20secci%C3%B3n%20"${selectedAdSlotForContact.location}".%0A%0APor%20favor,%20env%C3%ADenme%20los%20detalles%20de%20tarifas%20y%20formatos.%0A%0ASaludos!`} 
+                className="console-btn-glow"
+                style={{ 
+                  background: 'linear-gradient(135deg, #00FF88, #00D060)', 
+                  color: '#050805', 
+                  padding: '8px 16px', 
+                  borderRadius: '8px', 
+                  fontSize: '0.8rem', 
+                  fontWeight: 'bold', 
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                📧 Enviar Correo de Consulta
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Printable PDF Report Layout (v1.0 Enriched Grow Audit) */}
       <div className="print-report-only">

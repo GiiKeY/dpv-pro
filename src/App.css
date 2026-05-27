@@ -1698,17 +1698,22 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 @media print {
-  body {
+  html, body, #root, .app-container {
     background-color: #ffffff !important;
     background-image: none !important;
     color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    box-shadow: none !important;
   }
   
   /* Hide all interactive components, navigation, buttons, and footers */
-  #root > div:not(.print-report-only),
-  .app-container > *:not(.print-report-only),
   header,
   .view-switcher,
+  .stage-selector,
   .stage-selector-container,
   .mode-selector,
   .main-display,
@@ -1719,8 +1724,13 @@ input[type="range"]::-moz-range-thumb:hover {
   .support-section,
   .ad-slot-top,
   .ad-slot-bottom,
+  .adsense-sandbox-banner,
+  .advertisement-card-premium,
+  .payment-instructions-container,
   footer,
-  .modal-overlay {
+  .modal-overlay,
+  .interstitial-overlay,
+  .console-overlay-wrapper {
     display: none !important;
     height: 0 !important;
     overflow: hidden !important;
