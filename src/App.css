@@ -400,19 +400,21 @@ th, td {
   min-width: 60px;
 }
 
-th {
-  background: rgba(20, 30, 20, 0.9);
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
+@media screen {
+  th {
+    background: rgba(20, 30, 20, 0.9);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
 
-.sticky-col {
-  position: sticky;
-  left: 0;
-  background: rgba(20, 30, 20, 1) !important;
-  z-index: 6;
-  border-right: 2px solid var(--glass-border);
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    background: rgba(20, 30, 20, 1) !important;
+    z-index: 6;
+    border-right: 2px solid var(--glass-border);
+  }
 }
 
 /* Info Section */
@@ -1748,15 +1750,70 @@ input[type="range"]::-moz-range-thumb:hover {
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
   .print-report-only * {
     visibility: visible !important;
-    color: #000000 !important;
-    background: transparent !important;
-    border-color: #cccccc !important;
     box-shadow: none !important;
     text-shadow: none !important;
+  }
+
+  /* Robust print-specific reset to prevent overlapping and layout shifting */
+  .print-report-only table,
+  .print-report-only thead,
+  .print-report-only tbody,
+  .print-report-only tr,
+  .print-report-only th,
+  .print-report-only td {
+    position: static !important;
+    z-index: auto !important;
+    float: none !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    transform: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+  }
+  
+  .print-report-only table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .print-report-only thead {
+    display: table-header-group !important;
+  }
+
+  .print-report-only tbody {
+    display: table-row-group !important;
+  }
+
+  .print-report-only tr {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-report-only th, 
+  .print-report-only td {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: left !important;
+    padding: 10px 12px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  .print-report-only th {
+    font-weight: bold !important;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #94a3b8 !important;
   }
 
   .badge-audit-set {

@@ -694,27 +694,49 @@ function App() {
     );
   }
 
-  if (isPrinting) {
+  const renderPrintReport = () => {
+    const serialId = `DPV-PRO-AUDIT-${new Date().getFullYear()}-${selectedStrain.name.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
     return (
       <div className="print-report-only" style={{ display: 'block', background: '#ffffff', color: '#000000', padding: '30px', minHeight: '100vh', width: '100%' }}>
-        <div style={{ borderBottom: '3px solid #000', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Header Block with Accent bar and custom serial ID */}
+        <div style={{ paddingBottom: '10px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #cbd5e1' }}>
           <div style={{ textAlign: 'left' }}>
-            <h1 style={{ fontSize: '2rem', margin: 0, color: '#000', fontFamily: 'sans-serif', fontWeight: 'bold' }}>DPV PRO - AUDITORÍA INTEGRAL DE CULTIVO</h1>
-            <span style={{ fontSize: '0.9rem', color: '#555' }}>Reporte de Precisión y Calibración Fisiológica Vegetal (Offline Físico)</span>
+            <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#0f172a', fontFamily: 'sans-serif', fontWeight: '800', letterSpacing: '-0.5px' }}>
+              DPV <span style={{ color: '#00CC6A' }}>PRO</span>
+            </h1>
+            <span style={{ fontSize: '0.95rem', color: '#475569', fontWeight: '600' }}>AUDITORÍA INTEGRAL DE CULTIVO</span>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', fontFamily: 'monospace' }}>Reporte de Precisión y Calibración Fisiológica Vegetal (Offline Físico)</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <strong style={{ fontSize: '1.25rem', display: 'block', color: '#000' }}>{adminConfig.growShops[0].name}</strong>
-            <span style={{ fontSize: '0.85rem', color: '#555' }}>Punto de Calibración DPV Autorizado</span>
+            <strong style={{ fontSize: '1.25rem', display: 'block', color: '#0f172a', fontWeight: '700' }}>{adminConfig.growShops[0].name}</strong>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Punto de Calibración DPV Autorizado</span>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', fontFamily: 'monospace' }}>ID: {serialId}</div>
           </div>
         </div>
+        
+        {/* Accent green bar */}
+        <div style={{ height: '5px', background: '#00CC6A', borderRadius: '2px', marginBottom: '20px' }} />
 
-        {/* Informacion de la sesion */}
-        <div style={{ border: '1px solid #000', padding: '12px', background: '#f5f5f5', marginBottom: '20px', fontSize: '0.85rem', textAlign: 'left', color: '#000' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-            <div>📅 <strong>Fecha del Reporte:</strong> {new Date().toLocaleDateString('es-ES')}</div>
-            <div>🧬 <strong>Genética / Perfil Activo:</strong> {selectedStrain.name}</div>
-            <div>🌱 <strong>Etapa de Desarrollo:</strong> {targets[stage].name}</div>
-            <div>📊 <strong>DPV Diurno Promedio:</strong> <strong>{vpd.toFixed(2)} kPa</strong> ({status.label})</div>
+        {/* Executive 4-column summary metric grid */}
+        <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '15px', background: '#f8fafc', marginBottom: '25px', fontSize: '0.9rem', color: '#0f172a' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+            <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '10px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>📅 Fecha del Reporte</span>
+              <strong style={{ fontSize: '0.95rem', display: 'block' }}>{new Date().toLocaleDateString('es-ES')}</strong>
+            </div>
+            <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '10px', paddingLeft: '5px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>🧬 Genética / Perfil</span>
+              <strong style={{ fontSize: '0.95rem', display: 'block' }}>{selectedStrain.name}</strong>
+            </div>
+            <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '10px', paddingLeft: '5px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>🌱 Etapa</span>
+              <strong style={{ fontSize: '0.95rem', display: 'block' }}>{targets[stage].name}</strong>
+            </div>
+            <div style={{ paddingLeft: '5px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>📊 DPV Diurno Promedio</span>
+              <strong style={{ fontSize: '0.95rem', display: 'block', color: '#0f172a' }}>{vpd.toFixed(2)} kPa</strong>
+            </div>
           </div>
         </div>
 
@@ -722,36 +744,36 @@ function App() {
         {Object.keys(auditSections).map((key) => {
           const sec = auditSections[key];
           return (
-            <div key={key} style={{ marginBottom: '25px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', paddingBottom: '8px', marginBottom: '10px' }}>
-                <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div key={key} style={{ marginBottom: '25px', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '8px', textAlign: 'left', color: '#000000', pageBreakInside: 'avoid' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '10px' }}>
+                <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
                   {sec.title}
                 </h3>
-                <span className={`badge-audit ${sec.isSet ? 'badge-audit-set' : 'badge-audit-unset'}`} style={{ border: '1px solid #ccc', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                <span className={`badge-audit ${sec.isSet ? 'badge-audit-set' : 'badge-audit-unset'}`} style={{ border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', background: sec.isSet ? '#d4edda' : '#f8d7da', color: sec.isSet ? '#155724' : '#721c24' }}>
                   {sec.badge}
                 </span>
               </div>
 
               {/* Cartel / Alerta Impreso */}
-              <div className={`audit-alert-card ${sec.isSet ? 'set' : 'unset'}`} style={{ padding: '10px', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '10px', fontWeight: 'bold', background: sec.isSet ? '#e2f0d9' : '#fce4d6', color: sec.isSet ? '#385723' : '#c65911' }}>
+              <div className={`audit-alert-card ${sec.isSet ? 'set' : 'unset'}`} style={{ padding: '10px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '12px', fontWeight: '600', background: sec.isSet ? '#d4edda' : '#f8d7da', color: sec.isSet ? '#155724' : '#721c24', border: sec.isSet ? '1px solid #c3e6cb' : '1px solid #f5c6cb' }}>
                 {sec.alertText}
               </div>
 
-              {/* Tabla Estructurada de Alto Contraste */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#000' }}>
+              {/* Tabla Estructurada de Alto Contraste (Borderless columns, clean zebra style) */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#000000' }}>
                 <thead>
-                  <tr style={{ background: '#eee', borderBottom: '2px solid #000' }}>
-                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Parámetro / Variable</th>
-                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Valor Configurado</th>
-                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Rango / Referencia Científica</th>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #64748b' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid #64748b' }}>Parámetro / Variable</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid #64748b' }}>Valor Configurado</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid #64748b' }}>Rango / Referencia Científica</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sec.data.map((row, index) => (
-                    <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
-                      <td style={{ padding: '6px', border: '1px solid #ddd' }}>{row.name}</td>
-                      <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd', color: '#000' }}>{row.value}</td>
-                      <td style={{ padding: '6px', border: '1px solid #ddd', color: '#555' }}>{row.target}</td>
+                    <tr key={index} style={{ background: index % 2 === 0 ? '#ffffff' : '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '10px 12px', color: '#334155', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>{row.name}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>{row.value}</td>
+                      <td style={{ padding: '10px 12px', color: '#475569', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>{row.target}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -761,14 +783,14 @@ function App() {
         })}
 
         {/* Equipamientos Activos */}
-        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
-          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🔌 Carga y Simulación de Dispositivos Eléctricos</h3>
+        <div style={{ border: '1px solid #cbd5e1', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', color: '#000000', pageBreakInside: 'avoid' }}>
+          <h3 style={{ margin: '0 0 12px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '6px', fontSize: '1.05rem', color: '#0f172a', fontWeight: '700' }}>🔌 Carga y Simulación de Dispositivos Eléctricos</h3>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {Object.keys(activeDevices).map(key => (
               <span 
                 key={key} 
                 className={`badge-audit ${activeDevices[key] ? 'badge-audit-set' : 'badge-audit-unset'}`}
-                style={{ fontSize: '0.75rem', border: '1px solid #ccc', padding: '4px 8px', borderRadius: '4px', background: activeDevices[key] ? '#d4edda' : '#f8d7da', color: activeDevices[key] ? '#155724' : '#721c24' }}
+                style={{ fontSize: '0.8rem', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '4px', fontWeight: 'bold', background: activeDevices[key] ? '#d4edda' : '#f8d7da', color: activeDevices[key] ? '#155724' : '#721c24' }}
               >
                 {key === 'lights' ? '💡 Luces' : key === 'humidifier' ? '💧 Humidificador' : key === 'dehumidifier' ? '❄️ Deshum.' : key === 'extractor' ? '🌪️ Extractor' : key === 'heater' ? '🔥 Calefactor' : '❄️ AC'}
                 : {activeDevices[key] ? 'Activo' : 'Inactivo'}
@@ -778,47 +800,94 @@ function App() {
         </div>
 
         {/* Cupones de descuento activos */}
-        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
-          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🎫 Cupones Activos y Beneficios en Tiendas</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: '#000' }}>
+        <div style={{ border: '1px solid #cbd5e1', padding: '15px', borderRadius: '8px', marginBottom: '30px', textAlign: 'left', color: '#000000', pageBreakInside: 'avoid' }}>
+          <h3 style={{ margin: '0 0 12px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '6px', fontSize: '1.05rem', color: '#0f172a', fontWeight: '700' }}>🎫 Cupones Activos y Beneficios en Tiendas</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#000000' }}>
             <thead>
-              <tr style={{ background: '#eee', borderBottom: '1px solid #000' }}>
-                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Socio Comercial / Marca</th>
-                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Código de Cupón</th>
-                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Beneficio Aplicado</th>
+              <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #64748b' }}>
+                <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid #64748b' }}>Socio Comercial / Marca</th>
+                <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid #64748b' }}>Código de Cupón</th>
+                <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: '2px solid #64748b' }}>Beneficio Aplicado</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛍️ {adminConfig.growShops[0].name} (Socio Físico)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.growShops[0].coupon}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>10% de Descuento en compra de fertilizantes y sustratos</td>
+              <tr style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '10px 12px', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>🛍️ {adminConfig.growShops[0].name} (Socio Físico)</td>
+                <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#00CC6A', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>{adminConfig.growShops[0].coupon}</td>
+                <td style={{ padding: '10px 12px', color: '#334155', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>10% de Descuento en compra de fertilizantes y sustratos</td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>💡 {adSlots.find(s => s.id === 'sponsor_led')?.partnerName || 'Mars Hydro'} (Paneles LED)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adSlots.find(s => s.id === 'sponsor_led')?.coupon || 'LEDSHADOW'}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>Envío gratis + Dimer de calibración inteligente bonificado</td>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '10px 12px', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>💡 {adSlots.find(s => s.id === 'sponsor_led')?.partnerName || 'Mars Hydro'} (Paneles LED)</td>
+                <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#00CC6A', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>{adSlots.find(s => s.id === 'sponsor_led')?.coupon || 'LEDSHADOW'}</td>
+                <td style={{ padding: '10px 12px', color: '#334155', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>Envío gratis + Dimer de calibración inteligente bonificado</td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🌪️ {adSlots.find(s => s.id === 'sponsor_esporas')?.partnerName || 'Garden Highpro'} (Ventilación)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adSlots.find(s => s.id === 'sponsor_esporas')?.coupon || 'SHADOWAIR'}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>5% OFF en extractores Proline de alto caudal</td>
+              <tr style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '10px 12px', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>🌪️ {adSlots.find(s => s.id === 'sponsor_esporas')?.partnerName || 'Garden Highpro'} (Ventilación)</td>
+                <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#00CC6A', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>{adSlots.find(s => s.id === 'sponsor_esporas')?.coupon || 'SHADOWAIR'}</td>
+                <td style={{ padding: '10px 12px', color: '#334155', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>5% OFF en extractores Proline de alto caudal</td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛡️ BioGreen Fungi (Preventivo)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>SHADOWFUNGI</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>15% OFF en preventivo orgánico de botrytis</td>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '10px 12px', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>🛡️ BioGreen Fungi (Preventivo)</td>
+                <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#00CC6A', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>SHADOWFUNGI</td>
+                <td style={{ padding: '10px 12px', color: '#334155', borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>15% OFF en preventivo orgánico de botrytis</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div style={{ borderTop: '2px solid #000', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#555', pageBreakInside: 'avoid' }}>
-          <p>Reporte oficial de auditoría emitido de forma fiable y segura por <strong>DPV PRO v1.0</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
-          <p>Presenta este reporte en formato impreso o digital en tu Grow Shop aliado para validar tus cupones y la calibración del cultivo.</p>
+        {/* Dotted Stamp and Signature placeholder box for grow shop signatures */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '30px', marginTop: '40px', marginBottom: '35px', pageBreakInside: 'avoid' }}>
+          {/* Sello / Stamp Square Box */}
+          <div style={{ 
+            width: '180px', 
+            height: '180px', 
+            border: '2px dotted #94a3b8', 
+            borderRadius: '12px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            textAlign: 'center',
+            padding: '10px',
+            background: '#fafafa',
+            color: '#475569'
+          }}>
+            <span style={{ fontSize: '1.8rem', marginBottom: '5px' }}>💮</span>
+            <strong style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#334155', letterSpacing: '0.5px' }}>SELLO AUTORIZADO</strong>
+            <span style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px' }}>{adminConfig.growShops[0].name}</span>
+            <span style={{ fontSize: '0.6rem', color: '#94a3b8', marginTop: '8px', fontFamily: 'monospace' }}>PUNTO VALIDADO</span>
+          </div>
+
+          {/* Signature and Verification lines */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ borderBottom: '1.5px dotted #64748b', marginBottom: '8px', height: '80px' }}></div>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 'bold', display: 'block' }}>Firma del Técnico Calibrador</span>
+                <span style={{ fontSize: '0.65rem', color: '#64748b' }}>Responsable de Cultivo DPV PRO</span>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ borderBottom: '1.5px dotted #64748b', marginBottom: '8px', height: '80px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#475569', fontFamily: 'monospace', marginBottom: '4px' }}>CODE: {Math.floor(100000 + Math.random() * 900000)}</span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 'bold', display: 'block' }}>Código de Validación Física</span>
+                <span style={{ fontSize: '0.65rem', color: '#64748b' }}>Punto de Calibración DPV</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer text */}
+        <div style={{ borderTop: '2px solid #000000', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', pageBreakInside: 'avoid' }}>
+          <p style={{ margin: '0 0 5px 0' }}>Reporte oficial de auditoría emitido de forma fiable y segura por <strong>DPV PRO v1.0</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
+          <p style={{ margin: 0 }}>Presenta este reporte en formato impreso o digital en tu Grow Shop aliado para validar tus cupones y la calibración del cultivo.</p>
         </div>
       </div>
     );
+  };
+
+  if (isPrinting) {
+    return renderPrintReport();
   }
 
   return (
@@ -4001,128 +4070,7 @@ function App() {
       )}
 
       {/* Printable PDF Report Layout (v1.0 Enriched Grow Audit) */}
-      <div className="print-report-only">
-        <div style={{ borderBottom: '3px solid #000', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ textAlign: 'left' }}>
-            <h1 style={{ fontSize: '2rem', margin: 0, color: '#000', fontFamily: 'sans-serif' }}>DPV PRO - AUDITORÍA INTEGRAL DE CULTIVO</h1>
-            <span style={{ fontSize: '0.9rem', color: '#555' }}>Reporte de Precisión y Calibración Fisiológica Vegetal (Offline Físico)</span>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <strong style={{ fontSize: '1.25rem', display: 'block', color: '#000' }}>{adminConfig.growShops[0].name}</strong>
-            <span style={{ fontSize: '0.85rem', color: '#555' }}>Punto de Calibración DPV Autorizado</span>
-          </div>
-        </div>
-
-        {/* Informacion de la sesion */}
-        <div style={{ border: '1px solid #000', padding: '12px', background: '#f5f5f5', marginBottom: '20px', fontSize: '0.85rem', textAlign: 'left', color: '#000' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-            <div>📅 <strong>Fecha del Reporte:</strong> {new Date().toLocaleDateString('es-ES')}</div>
-            <div>🧬 <strong>Genética / Perfil Activo:</strong> {selectedStrain.name}</div>
-            <div>🌱 <strong>Etapa de Desarrollo:</strong> {targets[stage].name}</div>
-            <div>📊 <strong>DPV Diurno Promedio:</strong> <strong>{vpd.toFixed(2)} kPa</strong> ({status.label})</div>
-          </div>
-        </div>
-
-        {/* Recorrer las 7 secciones de auditoría para la versión impresa */}
-        {Object.keys(auditSections).map((key) => {
-          const sec = auditSections[key];
-          return (
-            <div key={key} style={{ marginBottom: '25px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', paddingBottom: '8px', marginBottom: '10px' }}>
-                <h3 style={{ fontSize: '1.1rem', margin: 0, color: '#000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {sec.title}
-                </h3>
-                <span className={`badge-audit ${sec.isSet ? 'badge-audit-set' : 'badge-audit-unset'}`} style={{ border: '1px solid #ccc' }}>
-                  {sec.badge}
-                </span>
-              </div>
-
-              {/* Cartel / Alerta Impreso */}
-              <div className={`audit-alert-card ${sec.isSet ? 'set' : 'unset'}`} style={{ padding: '10px', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '10px', fontWeight: 'bold' }}>
-                {sec.alertText}
-              </div>
-
-              {/* Tabla Estructurada de Alto Contraste */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: '#000' }}>
-                <thead>
-                  <tr style={{ background: '#eee', borderBottom: '2px solid #000' }}>
-                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Parámetro / Variable</th>
-                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Valor Configurado</th>
-                    <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Rango / Referencia Científica</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sec.data.map((row, index) => (
-                    <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
-                      <td style={{ padding: '6px', border: '1px solid #ddd' }}>{row.name}</td>
-                      <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd', color: '#000' }}>{row.value}</td>
-                      <td style={{ padding: '6px', border: '1px solid #ddd', color: '#555' }}>{row.target}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        })}
-
-        {/* Equipamientos Activos */}
-        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
-          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🔌 Carga y Simulación de Dispositivos Eléctricos</h3>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {Object.keys(activeDevices).map(key => (
-              <span 
-                key={key} 
-                className={`badge-audit ${activeDevices[key] ? 'badge-audit-set' : 'badge-audit-unset'}`}
-                style={{ fontSize: '0.75rem', border: '1px solid #ccc' }}
-              >
-                {key === 'lights' ? '💡 Luces' : key === 'humidifier' ? '💧 Humidificador' : key === 'dehumidifier' ? '❄️ Deshum.' : key === 'extractor' ? '🌪️ Extractor' : key === 'heater' ? '🔥 Calefactor' : '❄️ AC'}
-                : {activeDevices[key] ? 'Activo' : 'Inactivo'}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Cupones de descuento activos */}
-        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', color: '#000', pageBreakInside: 'avoid' }}>
-          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '1rem', color: '#000' }}>🎫 Cupones Activos y Beneficios en Tiendas</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: '#000' }}>
-            <thead>
-              <tr style={{ background: '#eee', borderBottom: '1px solid #000' }}>
-                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Socio Comercial / Marca</th>
-                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Código de Cupón</th>
-                <th style={{ textAlign: 'left', padding: '6px', border: '1px solid #ddd' }}>Beneficio Aplicado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛍️ {adminConfig.growShops[0].name} (Socio Físico)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.growShops[0].coupon}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>10% de Descuento en compra de fertilizantes y sustratos</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>💡 Mars Hydro (Paneles LED)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.sponsors.led.coupon}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>Envío gratis + Dimer de calibración inteligente bonificado</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🌪️ Garden Highpro (Ventilación)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.sponsors.ventilation.coupon}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>5% OFF en extractores Proline de alto caudal</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>🛡️ BioGreen Fungi (Preventivo)</td>
-                <td style={{ padding: '6px', fontWeight: 'bold', border: '1px solid #ddd' }}>{adminConfig.sponsors.fungicide.coupon}</td>
-                <td style={{ padding: '6px', border: '1px solid #ddd' }}>15% OFF en preventivo orgánico de botrytis</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div style={{ borderTop: '2px solid #000', paddingTop: '15px', textAlign: 'center', fontSize: '0.8rem', color: '#555', pageBreakInside: 'avoid' }}>
-          <p>Reporte oficial de auditoría emitido de forma fiable y segura por <strong>DPV PRO v1.0</strong> en colaboración con <strong>{adminConfig.growShops[0].name}</strong>.</p>
-          <p>Presenta este reporte en formato impreso o digital en tu Grow Shop aliado para validar tus cupones y la calibración del cultivo.</p>
-        </div>
-      </div>
+      {renderPrintReport()}
 
       {/* Overlay Intersticial Científico (Ads Optimizer) */}
       {interstitial.active && (
