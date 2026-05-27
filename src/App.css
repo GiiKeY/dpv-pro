@@ -2153,3 +2153,188 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #ffd600;
   font-size: 0.8rem;
 }
+
+/* ==========================================
+   ESTILOS PREMIUM DPV PRO (EJE 3)
+   ========================================== */
+
+/* Botón de Navegación Premium */
+.premium-nav-btn {
+  border: 1px solid rgba(255, 214, 0, 0.25) !important;
+  color: #FFD600 !important;
+  background: rgba(255, 214, 0, 0.02) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-nav-btn:hover {
+  background: rgba(255, 214, 0, 0.1) !important;
+  border-color: #FFD600 !important;
+  box-shadow: 0 0 15px rgba(255, 214, 0, 0.25), inset 0 0 10px rgba(255, 214, 0, 0.05) !important;
+  transform: translateY(-1px);
+}
+
+.premium-nav-btn.active {
+  background: linear-gradient(135deg, rgba(255, 214, 0, 0.15), rgba(255, 170, 0, 0.05)) !important;
+  border-color: #FFD600 !important;
+  color: #fff !important;
+  box-shadow: 0 0 20px rgba(255, 214, 0, 0.35), inset 0 0 12px rgba(255, 214, 0, 0.1) !important;
+}
+
+/* Tarjeta DPV PRO Premium (Golden Glassmorphism) */
+.premium-card {
+  background: linear-gradient(135deg, rgba(255, 214, 0, 0.04), rgba(5, 8, 5, 0.7)) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 214, 0, 0.3) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 214, 0, 0.04), inset 0 0 30px rgba(255, 214, 0, 0.02) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.premium-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 214, 0, 0.3), transparent);
+  pointer-events: none;
+}
+
+.premium-card.glow-border {
+  animation: goldCardGlow 4s infinite ease-in-out;
+}
+
+@keyframes goldCardGlow {
+  0%, 100% {
+    border-color: rgba(255, 214, 0, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 214, 0, 0.04);
+  }
+  50% {
+    border-color: rgba(255, 214, 0, 0.6);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 214, 0, 0.15);
+  }
+}
+
+/* Botón Premium Metálico */
+.premium-btn {
+  background: linear-gradient(135deg, #FFE066, #F5B041) !important;
+  color: #030803 !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(245, 176, 65, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-btn:hover {
+  background: linear-gradient(135deg, #FFF099, #F7C56F) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 176, 65, 0.5), 0 0 10px rgba(255, 214, 0, 0.4) !important;
+}
+
+.premium-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(245, 176, 65, 0.4) !important;
+}
+
+.premium-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 20%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(30deg);
+  transition: none;
+}
+
+.premium-btn:hover::after {
+  left: 120%;
+  transition: all 0.8s cubic-bezier(0.3, 1, 0.2, 1);
+}
+
+/* Insignia Premium con Brillo */
+.premium-badge-glow {
+  background: linear-gradient(135deg, rgba(255, 214, 0, 0.15), rgba(255, 170, 0, 0.05));
+  border: 1px solid rgba(255, 214, 0, 0.35);
+  border-radius: 8px;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 15px rgba(255, 214, 0, 0.15), inset 0 0 8px rgba(255, 214, 0, 0.05);
+  animation: goldBadgeGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes goldBadgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(255, 214, 0, 0.1), inset 0 0 6px rgba(255, 214, 0, 0.02);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 214, 0, 0.3), inset 0 0 12px rgba(255, 214, 0, 0.1);
+    border-color: rgba(255, 214, 0, 0.6);
+  }
+}
+
+/* Tarjeta Científica Avanzada (Reemplazo de Anuncios) */
+.premium-scientific-card {
+  background: linear-gradient(135deg, rgba(0, 50, 20, 0.1), rgba(5, 8, 5, 0.8)) !important;
+  border-left: 5px solid #00FF88 !important;
+  border-right: 1px solid rgba(0, 255, 136, 0.15) !important;
+  border-top: 1px solid rgba(0, 255, 136, 0.15) !important;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.15) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.02) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.premium-scientific-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 255, 136, 0.35) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 255, 136, 0.05), inset 0 0 20px rgba(0, 255, 136, 0.04) !important;
+}
+
+.premium-scientific-card h5 {
+  font-family: 'Outfit', sans-serif;
+  color: #00FF88;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.premium-scientific-card p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Modal de Actualización Premium / Límite de Freemium */
+.premium-upgrade-modal {
+  border: 1px solid rgba(255, 214, 0, 0.4) !important;
+  background: linear-gradient(135deg, rgba(15, 15, 10, 0.95), rgba(5, 5, 5, 0.98)) !important;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 214, 0, 0.1) !important;
+  animation: premiumModalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes premiumModalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

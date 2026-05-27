@@ -181,6 +181,105 @@ function App() {
   const [selectedAdSlotForContact, setSelectedAdSlotForContact] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  const [isPremium, setIsPremium] = useState(() => {
+    try {
+      return localStorage.getItem('dpv_pro_is_premium') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [profiles, setProfiles] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dpv_pro_saved_profiles');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [profileNameInput, setProfileNameInput] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dpv_pro_saved_profiles', JSON.stringify(profiles));
+    } catch (e) {
+      console.warn("Could not save profiles:", e);
+    }
+  }, [profiles]);
+
+  const handleSaveProfile = () => {
+    if (!profileNameInput.trim()) {
+      setProfileError('Por favor ingresa un nombre para el perfil.');
+      return;
+    }
+    
+    // Check limit for free plan
+    if (!isPremium && profiles.length >= 1) {
+      setShowLimitWarning(true);
+      return;
+    }
+    
+    const newProfile = {
+      id: Date.now().toString(),
+      name: profileNameInput.trim(),
+      date: new Date().toLocaleDateString('es-ES'),
+      temp,
+      humidity,
+      leafOffset,
+      activeStrain,
+      stage,
+      plantsCount,
+      potSize,
+      soilEc,
+      substrate,
+      ppfdInput,
+      lightType,
+      lightDistance,
+      roomWidth,
+      roomLength,
+      roomHeight,
+      dryTemp,
+      dryHumidity,
+      dryAirflow,
+      selectedSensor
+    };
+    
+    setProfiles(prev => [...prev, newProfile]);
+    setProfileNameInput('');
+    setProfileError('');
+    setProfileSuccess('¡Perfil de sala guardado correctamente!');
+    setTimeout(() => setProfileSuccess(''), 4000);
+  };
+
+  const handleLoadProfile = (prof) => {
+    if (prof.temp !== undefined) setTemp(prof.temp);
+    if (prof.humidity !== undefined) setHumidity(prof.humidity);
+    if (prof.leafOffset !== undefined) setLeafOffset(prof.leafOffset);
+    if (prof.activeStrain !== undefined) setActiveStrain(prof.activeStrain);
+    if (prof.stage !== undefined) setStage(prof.stage);
+    if (prof.plantsCount !== undefined) setPlantsCount(prof.plantsCount);
+    if (prof.potSize !== undefined) setPotSize(prof.potSize);
+    if (prof.soilEc !== undefined) setSoilEc(prof.soilEc);
+    if (prof.substrate !== undefined) setSubstrate(prof.substrate);
+    if (prof.ppfdInput !== undefined) setPpfdInput(prof.ppfdInput);
+    if (prof.lightType !== undefined) setLightType(prof.lightType);
+    if (prof.lightDistance !== undefined) setLightDistance(prof.lightDistance);
+    if (prof.roomWidth !== undefined) setRoomWidth(prof.roomWidth);
+    if (prof.roomLength !== undefined) setRoomLength(prof.roomLength);
+    if (prof.roomHeight !== undefined) setRoomHeight(prof.roomHeight);
+    if (prof.dryTemp !== undefined) setDryTemp(prof.dryTemp);
+    if (prof.dryHumidity !== undefined) setDryHumidity(prof.dryHumidity);
+    if (prof.dryAirflow !== undefined) setDryAirflow(prof.dryAirflow);
+    if (prof.selectedSensor !== undefined) setSelectedSensor(prof.selectedSensor);
+    
+    setProfileSuccess(`¡Perfil "${prof.name}" cargado correctamente en la calculadora!`);
+    setTimeout(() => setProfileSuccess(''), 4000);
+  };
+
   useEffect(() => {
     try {
       localStorage.setItem('dpv_pro_ad_slots', JSON.stringify(adSlots));
@@ -235,6 +334,10 @@ function App() {
   }, [interstitial.active]);
 
   const triggerInterstitial = (message, sponsor, coupon, onComplete) => {
+    if (isPremium) {
+      if (onComplete) onComplete();
+      return;
+    }
     setInterstitial({
       active: true,
       message,
@@ -247,6 +350,7 @@ function App() {
 
   // Helper para Banners de Publicidad Programática AdSense (Ads Optimizer)
   const renderAdSenseBanner = (slotName) => {
+    if (isPremium) return null;
     const getSlotId = (name) => {
       if (name.includes("Calculadora")) return "adsense_calc";
       if (name.includes("Tabla")) return "adsense_table";
@@ -704,6 +808,7 @@ function App() {
           <div style={{ textAlign: 'left' }}>
             <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#0f172a', fontFamily: 'sans-serif', fontWeight: '800', letterSpacing: '-0.5px' }}>
               DPV <span style={{ color: '#00CC6A' }}>PRO</span>
+              {isPremium && <span style={{ fontSize: '1rem', color: '#B8860B', background: '#FFD700', padding: '2px 8px', borderRadius: '4px', marginLeft: '10px', verticalAlign: 'middle', fontWeight: 'bold' }}>⭐ PREMIUM</span>}
             </h1>
             <span style={{ fontSize: '0.95rem', color: '#475569', fontWeight: '600' }}>AUDITORÍA INTEGRAL DE CULTIVO</span>
             <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', fontFamily: 'monospace' }}>Reporte de Precisión y Calibración Fisiológica Vegetal (Offline Físico)</div>
@@ -895,6 +1000,12 @@ function App() {
       <header>
         <div className="header-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', flexWrap: 'wrap' }}>
           <h1 className="glow-text" style={{ margin: 0 }}>DPV <span className="highlight">PRO</span></h1>
+          {isPremium && (
+            <div className="premium-badge-glow" title="Suscripción Premium DPV PRO Activa">
+              <Award size={16} color="#FFD600" className="icon-pulse" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#FFD600', letterSpacing: '0.5px' }}>⭐ PREMIUM MEMBER</span>
+            </div>
+          )}
           {hasBadge && (
             <div className="maestro-badge-glow" title="¡Felicidades Maestro de las Sombras! Certificado en Fisiología de Vapor y DPV.">
               <Award size={16} color="#FFD600" className="icon-pulse" />
@@ -906,9 +1017,11 @@ function App() {
       </header>
 
       {/* Publicidad Superior */}
-      <div className="ad-slot-top glass">
-        <span className="ad-placeholder">PUBLICIDAD - ESPACIO DISPONIBLE (ADSENSE)</span>
-      </div>
+      {!isPremium && (
+        <div className="ad-slot-top glass">
+          <span className="ad-placeholder">PUBLICIDAD - ESPACIO DISPONIBLE (ADSENSE)</span>
+        </div>
+      )}
 
       <nav className="view-switcher glass">
         <button className={`view-btn ${view === 'calc' ? 'active' : ''}`} onClick={() => setView('calc')}>
@@ -1469,6 +1582,9 @@ function App() {
               <aside className="pro-sidebar">
                 <h3>Módulos Avanzados</h3>
                 <nav className="pro-nav">
+                  <button className={`pro-nav-btn premium-nav-btn ${activeProTool === 'premium' ? 'active' : ''}`} onClick={() => setActiveProTool('premium')} style={{ border: '1px solid #FFD600', boxShadow: activeProTool === 'premium' ? '0 0 10px rgba(255, 214, 0, 0.4)' : '0 0 5px rgba(255, 214, 0, 0.1)', background: activeProTool === 'premium' ? 'linear-gradient(135deg, rgba(255, 214, 0, 0.15), rgba(0, 0, 0, 0.4))' : 'rgba(255, 214, 0, 0.02)' }}>
+                    ⭐ Perfiles & DPV Premium
+                  </button>
                   <button className={`pro-nav-btn ${activeProTool === 'nocturno' ? 'active' : ''}`} onClick={() => setActiveProTool('nocturno')}>
                     🌙 Predictor Nocturno
                   </button>
@@ -1501,6 +1617,412 @@ function App() {
 
               {/* Panel de Visualización del Módulo Activo */}
               <div className="pro-panel">
+                {activeProTool === 'premium' && (
+                  <div style={{ animation: 'fadeIn 0.4s ease' }}>
+                    {!isPremium ? (
+                      <div className="premium-card glow-border" style={{ 
+                        padding: '30px', 
+                        borderRadius: '16px', 
+                        background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.05), rgba(0, 0, 0, 0.4))', 
+                        border: '1px solid #FFD600',
+                        marginBottom: '30px',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ marginBottom: '20px' }}>
+                          <Sparkles size={36} color="#FFD600" className="icon-pulse" style={{ marginBottom: '10px' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#FFD600', textShadow: '0 0 15px rgba(255, 214, 0, 0.3)' }}>
+                            Suscripción DPV PRO Premium ⭐
+                          </h3>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '600px', margin: '10px auto 0 auto', lineHeight: '1.45' }}>
+                            Desbloquea el máximo potencial científico para tu cultivo. Elimina anuncios, guarda perfiles ilimitados y optimiza tus tiempos sin esperas comerciales.
+                          </p>
+                        </div>
+
+                        {/* Premium Features Checklist */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
+                          gap: '15px', 
+                          textAlign: 'left', 
+                          margin: '20px auto 30px auto',
+                          maxWidth: '800px',
+                          background: 'rgba(0,0,0,0.2)',
+                          padding: '20px',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(255, 214, 0, 0.1)'
+                        }}>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '0.85rem' }}>
+                            <span style={{ color: '#FFD600' }}>✓</span>
+                            <span><strong>Perfiles Ilimitados:</strong> Guarda infinitas salas de cultivo (Free: 1 slot).</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '0.85rem' }}>
+                            <span style={{ color: '#FFD600' }}>✓</span>
+                            <span><strong>Carga Instantánea:</strong> Sin delay de 2.5s en reportes ni simuladores.</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '0.85rem' }}>
+                            <span style={{ color: '#FFD600' }}>✓</span>
+                            <span><strong>Interfaz Sin Anuncios:</strong> Banners patrocinados reemplazados por consejos biológicos.</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '0.85rem' }}>
+                            <span style={{ color: '#FFD600' }}>✓</span>
+                            <span><strong>Insignia Dorada:</strong> Sello Premium en tu app e informes de auditoría PDF.</span>
+                          </div>
+                        </div>
+
+                        {/* Simulated Checkout Form */}
+                        <div className="glass" style={{ 
+                          padding: '24px', 
+                          borderRadius: '12px', 
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          maxWidth: '500px',
+                          margin: '0 auto',
+                          textAlign: 'left'
+                        }}>
+                          <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                            💳 Pasarela de Pago Segura (Simulación)
+                          </h4>
+                          
+                          {/* Plan Selection */}
+                          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                            <div style={{ 
+                              flex: 1, 
+                              border: '1px solid #FFD600', 
+                              background: 'rgba(255, 214, 0, 0.03)', 
+                              padding: '10px', 
+                              borderRadius: '8px', 
+                              cursor: 'pointer',
+                              textAlign: 'center'
+                            }}>
+                              <strong style={{ fontSize: '0.85rem', color: '#FFD600', display: 'block' }}>Mensual</strong>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>$4.99 USD</span>
+                            </div>
+                            <div style={{ 
+                              flex: 1, 
+                              border: '1px solid rgba(255,255,255,0.1)', 
+                              background: 'rgba(255,255,255,0.02)', 
+                              padding: '10px', 
+                              borderRadius: '8px', 
+                              cursor: 'pointer',
+                              textAlign: 'center'
+                            }}>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block' }}>Anual (Ahorra 33%)</strong>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#00FF88' }}>$39.99 USD</span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div>
+                              <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>NÚMERO DE TARJETA:</label>
+                              <input 
+                                type="text" 
+                                value="4000 1234 5678 9010" 
+                                disabled
+                                style={{ 
+                                  width: '100%', 
+                                  background: 'rgba(0,0,0,0.5)', 
+                                  border: '1px solid rgba(255,255,255,0.1)', 
+                                  color: '#fff', 
+                                  padding: '8px 12px', 
+                                  borderRadius: '6px', 
+                                  fontSize: '0.85rem',
+                                  fontFamily: 'monospace'
+                                }} 
+                              />
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>VENCIMIENTO:</label>
+                                <input 
+                                  type="text" 
+                                  value="12/28" 
+                                  disabled
+                                  style={{ 
+                                    width: '100%', 
+                                    background: 'rgba(0,0,0,0.5)', 
+                                    border: '1px solid rgba(255,255,255,0.1)', 
+                                    color: '#fff', 
+                                    padding: '8px 12px', 
+                                    borderRadius: '6px', 
+                                    fontSize: '0.85rem',
+                                    fontFamily: 'monospace'
+                                  }} 
+                                />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>CVC:</label>
+                                <input 
+                                  type="text" 
+                                  value="321" 
+                                  disabled
+                                  style={{ 
+                                    width: '100%', 
+                                    background: 'rgba(0,0,0,0.5)', 
+                                    border: '1px solid rgba(255,255,255,0.1)', 
+                                    color: '#fff', 
+                                    padding: '8px 12px', 
+                                    borderRadius: '6px', 
+                                    fontSize: '0.85rem',
+                                    fontFamily: 'monospace'
+                                  }} 
+                                />
+                              </div>
+                            </div>
+
+                            <button 
+                              onClick={() => {
+                                setIsPremium(true);
+                                localStorage.setItem('dpv_pro_is_premium', 'true');
+                                setProfileSuccess("¡Suscripción DPV PRO Premium Activada con éxito! ⭐ Gracias por tu apoyo.");
+                                setTimeout(() => setProfileSuccess(''), 5000);
+                              }}
+                              className="premium-btn"
+                              style={{
+                                width: '100%',
+                                background: 'linear-gradient(135deg, #FFE066, #F5B041)',
+                                color: '#050805',
+                                fontWeight: 'bold',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                marginTop: '15px',
+                                textAlign: 'center',
+                                boxShadow: '0 0 15px rgba(255, 214, 0, 0.3)'
+                              }}
+                            >
+                              Activar Suscripción Premium (Simulado) ⚡
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="premium-card glow-border" style={{ 
+                        padding: '24px', 
+                        borderRadius: '16px', 
+                        background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.03), rgba(0, 0, 0, 0.4))', 
+                        border: '1px solid #00FF88',
+                        marginBottom: '30px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '20px'
+                      }}>
+                        <div style={{ textAlign: 'left' }}>
+                          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#00FF88', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Award size={22} color="#FFD600" className="icon-pulse" /> 
+                            Cuenta Premium Activa ⭐
+                          </h3>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            Disfrutas de perfiles de sala ilimitados, cargas instantáneas y una interfaz libre de publicidad comercial.
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setIsPremium(false);
+                            localStorage.setItem('dpv_pro_is_premium', 'false');
+                            setProfileSuccess("Suscripción premium revertida a plan gratuito.");
+                            setTimeout(() => setProfileSuccess(''), 4000);
+                          }}
+                          style={{
+                            background: 'rgba(255, 77, 77, 0.1)',
+                            border: '1px solid rgba(255, 77, 77, 0.3)',
+                            color: '#FF4D4D',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Desactivar Premium (Simulación) 🔄
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Profile Manager Section */}
+                    <div className="glow-border glass" style={{ 
+                      padding: '24px', 
+                      borderRadius: '16px', 
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      background: 'rgba(0,0,0,0.2)'
+                    }}>
+                      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                        <div style={{ textAlign: 'left' }}>
+                          <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            📂 Gestor Avanzado de Perfiles de Sala
+                          </h4>
+                          <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            Guarda todas las variables de tu sala actual en un perfil de base de datos local y recárgalas en la calculadora al instante.
+                          </p>
+                        </div>
+                        
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          background: isPremium ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 214, 0, 0.1)', 
+                          color: isPremium ? '#00FF88' : '#FFD600', 
+                          border: isPremium ? '1px solid rgba(0, 255, 136, 0.2)' : '1px solid rgba(255, 214, 0, 0.2)',
+                          padding: '4px 10px', 
+                          borderRadius: '8px', 
+                          fontWeight: 'bold' 
+                        }}>
+                          {isPremium ? `Slots Utilizados: ${profiles.length}` : `Plan Gratuito: ${profiles.length} / 1 Perfil`}
+                        </span>
+                      </div>
+
+                      {/* Save Profile Form */}
+                      <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', marginBottom: '25px', textAlign: 'left' }}>
+                        <h5 style={{ margin: '0 0 12px 0', color: '#fff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>💾 Guardar Estado Actual de la Sala</h5>
+                        
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                           <div style={{ flex: 1, minWidth: '250px' }}>
+                            <input 
+                              type="text" 
+                              value={profileNameInput}
+                              onChange={(e) => setProfileNameInput(e.target.value)}
+                              placeholder="Ej: Vegetativo Rápido - Canopia 1.2m"
+                              style={{ 
+                                width: '100%', 
+                                background: 'rgba(0,0,0,0.5)', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                color: '#fff', 
+                                padding: '10px 14px', 
+                                borderRadius: '8px', 
+                                fontSize: '0.85rem',
+                                outline: 'none'
+                              }} 
+                            />
+                          </div>
+                          
+                          <button 
+                            onClick={handleSaveProfile}
+                            className="console-btn-glow"
+                            style={{
+                              background: 'linear-gradient(135deg, #00FF88, #00D060)',
+                              color: '#050e05',
+                              fontWeight: 'bold',
+                              padding: '10px 20px',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            Guardar Configuración Actual
+                          </button>
+                        </div>
+
+                        {profileSuccess && (
+                          <div style={{ color: '#00FF88', fontSize: '0.8rem', marginTop: '10px', fontWeight: 'bold' }}>
+                            {profileSuccess}
+                          </div>
+                        )}
+                        {profileError && (
+                          <div style={{ color: '#FF4D4D', fontSize: '0.8rem', marginTop: '10px', fontWeight: 'bold' }}>
+                            {profileError}
+                          </div>
+                        )}
+
+                        <p style={{ margin: '10px 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                          * Se guardarán 20+ variables activas: Temp ({temp}°C), Hum ({activeHumidity}%), Offset ({leafOffset}°C), Genética ({selectedStrain.name.split(' ')[0]}), Equipos, Dimensiones, Secado, etc.
+                        </p>
+                      </div>
+
+                      {/* List of Profiles */}
+                      <div>
+                        <h5 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left' }}>📂 Perfiles Guardados en Dispositivo</h5>
+                        
+                        {profiles.length === 0 ? (
+                          <div style={{ border: '1px dashed rgba(255,255,255,0.1)', padding: '30px', borderRadius: '12px', color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'center' }}>
+                            No tienes perfiles de sala guardados en este navegador. Configura la calculadora y haz clic en Guardar arriba.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {profiles.map(prof => {
+                              const strainObj = BOTANICAL_ARCHETYPES.find(s => s.id === prof.activeStrain) || { name: 'Desconocido' };
+                              return (
+                                <div key={prof.id} style={{ 
+                                  background: 'rgba(255,255,255,0.01)', 
+                                  border: '1px solid rgba(255,255,255,0.04)', 
+                                  padding: '16px', 
+                                  borderRadius: '12px',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  flexWrap: 'wrap',
+                                  gap: '15px',
+                                  textAlign: 'left'
+                                }}>
+                                  <div>
+                                    <strong style={{ fontSize: '0.95rem', color: '#fff', display: 'block' }}>{prof.name}</strong>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                      📅 Guardado: {prof.date} | Genética: <strong style={{ color: '#00FF88' }}>{strainObj.name}</strong>
+                                    </span>
+                                    
+                                    {/* Badges de parámetros clave guardados */}
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                      <span style={{ fontSize: '0.65rem', background: 'rgba(255, 77, 77, 0.1)', color: '#FF4D4D', padding: '2px 6px', borderRadius: '4px' }}>
+                                        {prof.temp}°C
+                                      </span>
+                                      <span style={{ fontSize: '0.65rem', background: 'rgba(0, 240, 255, 0.1)', color: '#00F0FF', padding: '2px 6px', borderRadius: '4px' }}>
+                                        {prof.humidity}% HR
+                                      </span>
+                                      <span style={{ fontSize: '0.65rem', background: 'rgba(160, 176, 160, 0.1)', color: '#A0B0A0', padding: '2px 6px', borderRadius: '4px' }}>
+                                        Offset: {prof.leafOffset}°C
+                                      </span>
+                                      <span style={{ fontSize: '0.65rem', background: 'rgba(255, 214, 0, 0.1)', color: '#FFD600', padding: '2px 6px', borderRadius: '4px', textTransform: 'capitalize' }}>
+                                        Etapa: {prof.stage}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button 
+                                      onClick={() => handleLoadProfile(prof)}
+                                      className="console-btn-glow"
+                                      style={{
+                                        background: '#00FF88',
+                                        color: '#050e05',
+                                        fontWeight: 'bold',
+                                        padding: '6px 12px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.75rem',
+                                        border: 'none',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Cargar en App ⚡
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setProfiles(prev => prev.filter(p => p.id !== prof.id));
+                                      }}
+                                      style={{
+                                        background: 'rgba(255, 77, 77, 0.1)',
+                                        border: '1px solid rgba(255, 77, 77, 0.2)',
+                                        color: '#FF4D4D',
+                                        padding: '6px 12px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {activeProTool === 'nocturno' && (
                   <div className="pro-module-card">
                     <div className="module-header">
@@ -2149,111 +2671,147 @@ function App() {
                             </p>
 
                             {/* Botón Fungicida Express (v0.9 Phase 3) */}
-                            {sporeTimer < 300 && (
-                              <div style={{
-                                display: 'flex',
-                                justifyContext: 'space-between',
-                                alignItems: 'center',
-                                background: 'rgba(255, 77, 77, 0.05)',
-                                border: '1px solid rgba(255, 77, 77, 0.15)',
-                                padding: '10px 14px',
-                                borderRadius: '10px',
-                                marginBottom: '12px',
-                                animation: 'pulseGlow 2s infinite ease-in-out',
-                                textAlign: 'left'
-                              }}>
-                                <div style={{ flex: 1 }}>
-                                  <span style={{ fontSize: '0.65rem', color: '#FF4D4D', fontWeight: 'bold', display: 'block' }}>🛡️ PROTECCIÓN SANITARIA:</span>
-                                  <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.fungicide.brand} - {adminConfig.sponsors.fungicide.product}</strong>
+                            {isPremium ? (
+                              sporeTimer < 300 && (
+                                <div style={{
+                                  background: 'rgba(255, 214, 0, 0.03)',
+                                  border: '1px solid #FFD600',
+                                  padding: '12px',
+                                  borderRadius: '10px',
+                                  marginBottom: '12px',
+                                  textAlign: 'left'
+                                }}>
+                                  <span style={{ fontSize: '0.65rem', color: '#FFD600', fontWeight: 'bold', display: 'block' }}>⭐ RECOMENDACIÓN DE BIOCONTROL DE MICROCLIMA:</span>
+                                  <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                    Cuando la humedad foliar aumenta (timer a {formattedTime}), la cutícula se debilita. Para proteger la canopia de forma preventiva sin fitotoxinas químicas, eleva la recirculación de aire interno usando ventiladores oscilantes directos a media altura para romper la capa límite estancada de vapor.
+                                  </p>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
-                                  <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.fungicide.coupon}</strong></span>
-                                  <a 
-                                    href="#" 
-                                    onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_seeds'); }}
-                                    className="console-btn-glow"
-                                    style={{ 
-                                      background: '#FFD600', 
-                                      color: '#050805', 
-                                      padding: '4px 10px', 
-                                      borderRadius: '6px', 
-                                      fontSize: '0.7rem', 
-                                      fontWeight: 'bold', 
-                                      textDecoration: 'none',
-                                      marginTop: '2px'
-                                    }}
-                                  >
-                                    Ver Preventivo ↗
-                                  </a>
+                              )
+                            ) : (
+                              sporeTimer < 300 && (
+                                <div style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  background: 'rgba(255, 77, 77, 0.05)',
+                                  border: '1px solid rgba(255, 77, 77, 0.15)',
+                                  padding: '10px 14px',
+                                  borderRadius: '10px',
+                                  marginBottom: '12px',
+                                  animation: 'pulseGlow 2s infinite ease-in-out',
+                                  textAlign: 'left'
+                                }}>
+                                  <div style={{ flex: 1 }}>
+                                    <span style={{ fontSize: '0.65rem', color: '#FF4D4D', fontWeight: 'bold', display: 'block' }}>🛡️ PROTECCIÓN SANITARIA:</span>
+                                    <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.fungicide.brand} - {adminConfig.sponsors.fungicide.product}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
+                                    <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.fungicide.coupon}</strong></span>
+                                    <a 
+                                      href="#" 
+                                      onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_seeds'); }}
+                                      className="console-btn-glow"
+                                      style={{ 
+                                        background: '#FFD600', 
+                                        color: '#050805', 
+                                        padding: '4px 10px', 
+                                        borderRadius: '6px', 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 'bold', 
+                                        textDecoration: 'none',
+                                        marginTop: '2px'
+                                      }}
+                                    >
+                                      Ver Preventivo ↗
+                                    </a>
+                                  </div>
                                 </div>
-                              </div>
+                              )
                             )}
 
                             {/* Botón Extractor Express (v1.0 Ads Optimizer) */}
-                            {vpd < 0.3 && (() => {
-                              const esporasSlot = adSlots.find(s => s.id === 'sponsor_esporas');
-                              if (esporasSlot.partnerActive) {
-                                return (
-                                  <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    background: 'rgba(0, 240, 255, 0.05)',
-                                    border: '1px solid rgba(0, 240, 255, 0.15)',
-                                    padding: '10px 14px',
-                                    borderRadius: '10px',
-                                    marginBottom: '12px',
-                                    animation: 'pulseGlow 2.5s infinite ease-in-out',
-                                    textAlign: 'left'
-                                  }}>
-                                    <div style={{ flex: 1 }}>
-                                      <span style={{ fontSize: '0.65rem', color: '#00F0FF', fontWeight: 'bold', display: 'block' }}>🌪️ MITIGACIÓN DE HUMEDAD URGENTE:</span>
-                                      <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.ventilation.brand} - {adminConfig.sponsors.ventilation.model}</strong>
-                                      <p style={{ margin: '2px 0 0 0', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>El DPV es críticamente bajo. Renueva el aire de la sala cada 60s para evacuar el agua líquida libre.</p>
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
-                                      <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.ventilation.coupon}</strong></span>
-                                      <a 
-                                        href="#" 
-                                        onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_esporas'); }}
-                                        className="console-btn-glow"
-                                        style={{ 
-                                          background: '#00F0FF', 
-                                          color: '#050805', 
-                                          padding: '4px 10px', 
-                                          borderRadius: '6px', 
-                                          fontSize: '0.7rem', 
-                                          fontWeight: 'bold', 
-                                          textDecoration: 'none',
-                                          marginTop: '2px'
-                                        }}
-                                      >
-                                        Ver Extractor ↗
-                                      </a>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return (
-                                <div 
-                                  onClick={() => triggerSponsorContact('sponsor_esporas')}
-                                  style={{
-                                    background: 'rgba(255, 214, 0, 0.03)',
-                                    border: '1px dashed rgba(255, 214, 0, 0.2)',
-                                    padding: '12px',
-                                    borderRadius: '10px',
-                                    marginBottom: '12px',
-                                    cursor: 'pointer',
-                                    textAlign: 'center'
-                                  }}
-                                >
-                                  <span style={{ fontSize: '0.75rem', color: '#ffd600', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>📢 Espacio para Extracción / Humedad Disponible</span>
-                                  <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                                    ¡Anuncia tus extractores o deshumidificadores aquí! Se activa automáticamente ante niveles de humedad críticos. Haz clic para contactarnos.
+                            {isPremium ? (
+                              vpd < 0.3 && (
+                                <div style={{
+                                  background: 'rgba(255, 214, 0, 0.03)',
+                                  border: '1px solid #FFD600',
+                                  padding: '12px',
+                                  borderRadius: '10px',
+                                  marginBottom: '12px',
+                                  textAlign: 'left'
+                                }}>
+                                  <span style={{ fontSize: '0.65rem', color: '#FFD600', fontWeight: 'bold', display: 'block' }}>⭐ PROTOCOLO ANTE DEPRESIÓN DE VAPOR EXTREMA:</span>
+                                  <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                    El DPV está críticamente bajo ({vpd.toFixed(2)} kPa). Con estomas bloqueados por saturación hídrica, la planta no asimila calcio. Inicia un barrido de renovación de aire programado: extrae de forma continua durante 15 minutos para descender la humedad relativa al menos un 10% y reactivar la transpiración.
                                   </p>
                                 </div>
-                              );
-                            })()}
+                              )
+                            ) : (
+                              vpd < 0.3 && (() => {
+                                const esporasSlot = adSlots.find(s => s.id === 'sponsor_esporas');
+                                if (esporasSlot.partnerActive) {
+                                  return (
+                                    <div style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      background: 'rgba(0, 240, 255, 0.05)',
+                                      border: '1px solid rgba(0, 240, 255, 0.15)',
+                                      padding: '10px 14px',
+                                      borderRadius: '10px',
+                                      marginBottom: '12px',
+                                      animation: 'pulseGlow 2.5s infinite ease-in-out',
+                                      textAlign: 'left'
+                                    }}>
+                                      <div style={{ flex: 1 }}>
+                                        <span style={{ fontSize: '0.65rem', color: '#00F0FF', fontWeight: 'bold', display: 'block' }}>🌪️ MITIGACIÓN DE HUMEDAD URGENTE:</span>
+                                        <strong style={{ fontSize: '0.75rem', color: '#fff' }}>{adminConfig.sponsors.ventilation.brand} - {adminConfig.sponsors.ventilation.model}</strong>
+                                        <p style={{ margin: '2px 0 0 0', fontSize: '0.62rem', color: 'var(--text-secondary)' }}>El DPV es críticamente bajo. Renueva el aire de la sala cada 60s para evacuar el agua líquida libre.</p>
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', marginLeft: '10px' }}>
+                                        <span style={{ fontSize: '0.6rem', color: '#FFD600' }}>Cupón: <strong>{adminConfig.sponsors.ventilation.coupon}</strong></span>
+                                        <a 
+                                          href="#" 
+                                          onClick={(e) => { e.preventDefault(); triggerSponsorContact('sponsor_esporas'); }}
+                                          className="console-btn-glow"
+                                          style={{ 
+                                            background: '#00F0FF', 
+                                            color: '#050805', 
+                                            padding: '4px 10px', 
+                                            borderRadius: '6px', 
+                                            fontSize: '0.7rem', 
+                                            fontWeight: 'bold', 
+                                            textDecoration: 'none',
+                                            marginTop: '2px'
+                                          }}
+                                        >
+                                          Ver Extractor ↗
+                                        </a>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div 
+                                    onClick={() => triggerSponsorContact('sponsor_esporas')}
+                                    style={{
+                                      background: 'rgba(255, 214, 0, 0.03)',
+                                      border: '1px dashed rgba(255, 214, 0, 0.2)',
+                                      padding: '12px',
+                                      borderRadius: '10px',
+                                      marginBottom: '12px',
+                                      cursor: 'pointer',
+                                      textAlign: 'center'
+                                    }}
+                                  >
+                                    <span style={{ fontSize: '0.75rem', color: '#ffd600', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>📢 Espacio para Extracción / Humedad Disponible</span>
+                                    <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                      ¡Anuncia tus extractores o deshumidificadores aquí! Se activa automáticamente ante niveles de humedad críticos. Haz clic para contactarnos.
+                                    </p>
+                                  </div>
+                                );
+                              })()
+                            )}
 
                             <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
                               <div style={{
@@ -2358,7 +2916,21 @@ function App() {
                       })()}
 
                       {/* PUBLICIDAD CONTEXTUAL DIRECTA DE ILUMINACIÓN LED (v1.0 Ads Optimizer) */}
-                      {(() => {
+                      {isPremium ? (
+                        <div className="advertisement-card-premium premium-scientific-card optimal-ec" style={{ marginTop: '20px', border: '1px solid #FFD600', background: 'rgba(255, 214, 0, 0.02)' }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <strong style={{ fontSize: '0.85rem', color: '#FFD600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                ⭐ Fisiología de Eficiencia Fotosintética y DLI
+                              </strong>
+                              <span style={{ fontSize: '0.6rem', border: '1px solid #FFD600', padding: '2px 6px', borderRadius: '4px', color: '#FFD600', fontWeight: 'bold' }}>SOPORTE CIENTÍFICO</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                              Con los estomas abiertos a un <strong>{calculatePhotosyntheticEfficiency(calculateStomatalConductance(vpd, lightIntensity, genetics), ppfdInput).efficiency.toFixed(0)}%</strong>, la asimilación cuántica es óptima. Mantener el balance entre fotones incidentes y el DPV asegura que la fotorrespiración sea nula, acelerando la formation de aceites esenciales sin estrés fotosintético.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (() => {
                         const ledSlot = adSlots.find(s => s.id === 'sponsor_led') || { partnerActive: true, partnerName: 'Mars Hydro LED', coupon: 'LEDSHADOW' };
                         if (ledSlot.partnerActive) {
                           return (
@@ -2536,7 +3108,37 @@ function App() {
                           </div>
 
                           {/* PUBLICIDAD CONTEXTUAL DIRECTA DE NUTRIENTES (v1.0 Ads Optimizer) */}
-                          {(() => {
+                          {isPremium ? (() => {
+                            let adviceTitle = 'Optimización Nutricional Basada en Transpiración 🧬';
+                            let adviceDesc = 'Tu electroconductividad está en la zona ideal de absorción estomática. Con el DPV y PPFD actuales, la planta tiene una tasa de transpiración óptima, permitiendo que la savia transporte calcio y silicio de forma constante a los brotes nuevos. Mantén la nutrición en esta fase.';
+                            let adviceClass = 'optimal-ec';
+                            
+                            if (soilEc < 1.2) {
+                              adviceTitle = '⚠️ Recomendación Biológica: Déficit de Presión Osmótica';
+                              adviceDesc = 'Humedad y nutrición deficientes detectadas. Un sustrato con baja EC restringe la succión pasiva vegetal. La conductancia estomática es elevada, pero el flujo del xilema transporta pocos iones minerales. Considera incrementar la carga orgánica de nitrógeno y micronutrientes quelados.';
+                              adviceClass = 'low-ec';
+                            } else if (soilEc > 2.0) {
+                              adviceTitle = '🔥 Alerta Científica: Plasmólisis e Inversión Osmótica';
+                              adviceDesc = 'Peligro osmótico en el sustrato. Con una EC de ' + soilEc.toFixed(1) + ' mS/cm, el potencial osmótico del sustrato es mayor que el celular radical, provocando deshidratación por ósmosis inversa. Lixivia el sustrato con una fracción de escurrimiento (leaching fraction) del 20-30% con agua pura corregida a pH 6.2.';
+                              adviceClass = 'high-ec';
+                            }
+                            
+                            return (
+                              <div className={`advertisement-card-premium premium-scientific-card ${adviceClass}`} style={{ marginTop: '20px', border: '1px solid #FFD600', background: 'rgba(255, 214, 0, 0.02)' }}>
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <strong style={{ fontSize: '0.85rem', color: '#FFD600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      ⭐ {adviceTitle}
+                                    </strong>
+                                    <span style={{ fontSize: '0.6rem', border: '1px solid #FFD600', padding: '2px 6px', borderRadius: '4px', color: '#FFD600', fontWeight: 'bold' }}>CONSEJO DE PRECISIÓN</span>
+                                  </div>
+                                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                                    {adviceDesc}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })() : (() => {
                             const riegoSlot = adSlots.find(s => s.id === 'sponsor_riego');
                             if (!riegoSlot.partnerActive) {
                               return (
@@ -3802,9 +4404,11 @@ function App() {
           <button className="support-btn" onClick={() => setIsSupportModalOpen(true)}>Invítanos un café ☕</button>
         </section>
 
-        <div className="ad-slot-bottom glass">
-          <span className="ad-placeholder">PUBLICIDAD - BANNER INFERIOR</span>
-        </div>
+        {!isPremium && (
+          <div className="ad-slot-bottom glass">
+            <span className="ad-placeholder">PUBLICIDAD - BANNER INFERIOR</span>
+          </div>
+        )}
       </main>
 
       <footer style={{
@@ -4103,6 +4707,38 @@ function App() {
               >
                 📧 Enviar Correo de Consulta
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Límite de Perfiles Alcanzado (Plan Freemium) */}
+      {showLimitWarning && (
+        <div className="modal-overlay" onClick={() => setShowLimitWarning(false)}>
+          <div className="modal-content glass glow-border premium-upgrade-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', border: '1px solid #FFD600' }}>
+            <button className="close-modal-btn" onClick={() => setShowLimitWarning(false)}>
+              <X size={20} />
+            </button>
+            <div className="modal-header" style={{ textAlign: 'center' }}>
+              <Sparkles size={36} color="#FFD600" className="icon-pulse" style={{ marginBottom: '10px' }} />
+              <h2 className="glow-text" style={{ color: '#FFD600', fontSize: '1.5rem' }}>¡Límite de Perfiles Alcanzado! ⭐</h2>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Has alcanzado el límite de <strong>1 perfil</strong> permitido en la cuenta gratuita de DPV PRO.</p>
+            </div>
+            <div style={{ background: 'rgba(255, 214, 0, 0.05)', border: '1px solid rgba(255, 214, 0, 0.2)', padding: '15px', borderRadius: '12px', marginBottom: '20px' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#fff', lineHeight: 1.4 }}>
+                Los cultivadores profesionales guardan docenas de configuraciones de sala para clonación, vegetación rápida, prefloración, engorde tardío y secado de precisión.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px', textAlign: 'left' }}>
+              <strong style={{ color: '#FFD600' }}>Beneficios de DPV PRO Premium:</strong>
+              <div>✨ Perfiles de sala <strong>ILIMITADOS</strong> en tu dispositivo.</div>
+              <div>✨ Navegación <strong>INSTANTÁNEA</strong> (sin los 2.5s de carga termodinámica).</div>
+              <div>✨ <strong>BLOQUEADOR DE ANUNCIOS</strong>: Interfaz 100% limpia de banners comerciales.</div>
+              <div>✨ <strong>INSIGNIA DE PRECISIÓN</strong> dorada en tu header y reportes impresos.</div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+              <button onClick={() => setShowLimitWarning(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Cerrar</button>
+              <button onClick={() => { setShowLimitWarning(false); setActiveProTool('premium'); setView('pro'); }} style={{ background: 'linear-gradient(135deg, #FFE066, #F5B041)', border: 'none', color: '#050805', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Suscribirse Premium ⚡</button>
             </div>
           </div>
         </div>
