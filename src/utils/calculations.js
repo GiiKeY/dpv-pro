@@ -52,9 +52,39 @@ export const getVPDStatus = (vpd) => {
 };
 
 /**
+ * Calculates dynamic VPD status based on the selected growth stage and active targets
+ */
+export const getVPDStatusForStage = (vpd, stage, targets) => {
+  if (vpd <= 0.1) return { label: 'Peligro (Rocío)', color: '#FF4D4D' };
+  
+  const target = targets[stage];
+  if (!target) return getVPDStatus(vpd);
+  
+  const val = parseFloat(vpd);
+  
+  if (val >= target.min && val <= target.max) {
+    return { label: 'Óptimo', color: '#00FF88' }; // Bright Green
+  }
+  
+  // Transition / Mild stress zones (within 0.2 kPa of target limits)
+  if (val >= (target.min - 0.2) && val < target.min) {
+    return { label: 'Transición (Bajo)', color: '#FFD600' }; // Yellow
+  }
+  if (val > target.max && val <= (target.max + 0.2)) {
+    return { label: 'Transición (Alto)', color: '#FFD600' }; // Yellow
+  }
+  
+  // Danger zones (outside 0.2 kPa range)
+  if (val < (target.min - 0.2)) {
+    return { label: 'Peligro (Exceso Humedad)', color: '#FF4D4D' }; // Red
+  }
+  return { label: 'Peligro (Estrés Seco)', color: '#FF4D4D' }; // Red
+};
+
+/**
  * Generates full data for the interactive table (100% to 0%)
  */
-export const generateTableData = (tempRange, leafOffset) => {
+export const generateTableData = (tempRange, leafOffset, stage, targets) => {
   const data = [];
   // Humedades de 100 a 0 en pasos de 5
   const hums = Array.from({ length: 21 }, (_, i) => 100 - i * 5);
@@ -63,7 +93,10 @@ export const generateTableData = (tempRange, leafOffset) => {
     const row = { temp: t, values: [] };
     for (const h of hums) {
       const vpd = calculateVPD(t, h, leafOffset);
-      row.values.push({ humidity: h, vpd: vpd.toFixed(2), status: getVPDStatus(vpd) });
+      const status = (stage && targets) 
+        ? getVPDStatusForStage(vpd, stage, targets) 
+        : getVPDStatus(vpd);
+      row.values.push({ humidity: h, vpd: vpd.toFixed(2), status });
     }
     data.push(row);
   }

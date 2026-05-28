@@ -619,7 +619,7 @@ function App() {
   const status = useMemo(() => getVPDStatus(vpd), [vpd]);
   const advice = useMemo(() => getSmartAdvice(vpd, temp, activeHumidity, targets[stage].min, targets[stage].max), [vpd, temp, activeHumidity, stage, targets]);
 
-  const tableData = useMemo(() => generateTableData({ min: 15, max: 35 }, leafOffset), [leafOffset]);
+  const tableData = useMemo(() => generateTableData({ min: 15, max: 35 }, leafOffset, stage, targets), [leafOffset, stage, targets]);
 
   // Módulo C (Reloj de Esporas) - Desacelerado a 60s reales para máxima optimización del render y CPU
   useEffect(() => {
@@ -1190,6 +1190,9 @@ function App() {
             activeHumidity={activeHumidity}
             handleCellClick={handleCellClick}
             renderAdSenseBanner={renderAdSenseBanner}
+            stage={stage}
+            setStage={setStage}
+            targets={targets}
           />
         )}
 

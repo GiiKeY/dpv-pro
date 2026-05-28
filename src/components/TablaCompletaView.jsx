@@ -5,14 +5,37 @@ function TablaCompletaView({
   temp,
   activeHumidity,
   handleCellClick,
-  renderAdSenseBanner
+  renderAdSenseBanner,
+  stage,
+  setStage,
+  targets
 }) {
   return (
     <section className="table-view glass">
-      <div className="table-header">
-        <h3>Gráfico Científico de DPV</h3>
-        <p>Valores calculados con un offset de hoja de {leafOffset}°C.</p>
+      <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ textAlign: 'left' }}>
+          <h3>Gráfico Científico de DPV</h3>
+          <p style={{ margin: '4px 0 0 0' }}>Valores calculados con un offset de hoja de {leafOffset}°C.</p>
+        </div>
+
+        {/* Selector de Etapa Dinámico */}
+        <div className="stage-selector glass" role="tablist" aria-label="Etapa de cultivo en tabla" style={{ margin: 0, padding: '4px', borderRadius: '10px' }}>
+          {Object.keys(targets).map((s) => (
+            <button 
+              key={s} 
+              className={`stage-btn ${stage === s ? 'active' : ''}`} 
+              onClick={() => setStage(s)}
+              role="tab"
+              aria-selected={stage === s}
+              id={`table-stage-tab-${s}`}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              {targets[s].name.split(' ')[0]} {/* Ej: Esquejes, Vegetativo, Floración */}
+            </button>
+          ))}
+        </div>
       </div>
+      
       <div className="table-container">
         <table>
           <thead>
