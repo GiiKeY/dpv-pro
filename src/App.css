@@ -2370,3 +2370,192 @@ input[type="password"]:focus {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   BUD MOISTURE DECAY OPTIMIZER (SECADO CINÉTICO) & SAAS NAVIGATION STYLES
+   ========================================================================== */
+
+/* SaaS Sidebar Reorganization */
+.sidebar-category {
+  margin-bottom: 22px;
+}
+
+.sidebar-category-header {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.sidebar-category-header.clima {
+  color: #00dfff;
+  text-shadow: 0 0 10px rgba(0, 223, 255, 0.2);
+}
+
+.sidebar-category-header.fisiologia {
+  color: #00ff88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+.sidebar-category-header.admin {
+  color: #ff9f43;
+  text-shadow: 0 0 10px rgba(255, 159, 67, 0.2);
+}
+
+/* Kinetic Gauge Track & Controls */
+.drying-gauge-container {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 25px 0;
+  position: relative;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.drying-gauge-track {
+  height: 24px;
+  border-radius: 12px;
+  background: linear-gradient(to right, 
+    #3b82f6 0%,      /* 80% moisture - Fresh (Blue) */
+    #00dfff 40%,     /* 40% moisture (Cyan) */
+    #00ff88 75%,     /* 12% moisture - Optimal Zone (Emerald Green) */
+    #10b981 88%,     /* 10% moisture - Optimal Zone (Darker Green) */
+    #f59e0b 93%,     /* 8% moisture - Overdry (Amber) */
+    #ef4444 100%     /* 0% moisture - Dry (Red) */
+  );
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.08);
+}
+
+.drying-gauge-marker {
+  position: absolute;
+  top: -6px;
+  width: 14px;
+  height: 36px;
+  background: #ffffff;
+  border: 2.5px solid #080f08;
+  border-radius: 6px;
+  box-shadow: 0 0 12px #ffffff, 0 4px 10px rgba(0,0,0,0.6);
+  transform: translateX(-50%);
+  transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+  cursor: pointer;
+}
+
+.drying-gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+.drying-gauge-label-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  user-select: none;
+}
+
+.drying-gauge-label-item.optimal {
+  color: #00ff88;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+  font-weight: 800;
+}
+
+.drying-gauge-label-item::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  width: 1px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.drying-gauge-label-item.optimal::before {
+  background: #00ff88;
+  height: 8px;
+  top: -18px;
+}
+
+/* Striped dark table for drying log */
+.drying-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 0.82rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.drying-log-table th {
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  font-weight: 700;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drying-log-table td {
+  padding: 12px 16px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.drying-log-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+  color: #ffffff;
+}
+
+.drying-log-table tr:last-child td {
+  border-bottom: none;
+}
+
+.drying-log-table th:first-child, .drying-log-table td:first-child {
+  border-top-left-radius: 12px;
+}
+.drying-log-table th:last-child, .drying-log-table td:last-child {
+  border-top-right-radius: 12px;
+}
+
+.delete-log-btn {
+  background: rgba(255, 77, 77, 0.08);
+  border: 1px solid rgba(255, 77, 77, 0.15);
+  color: #ff4d4d;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.delete-log-btn:hover {
+  background: rgba(255, 77, 77, 0.2);
+  border-color: rgba(255, 77, 77, 0.4);
+  color: #ff6e6e;
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.15);
+}
+
