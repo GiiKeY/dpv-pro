@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌑 PANEL DE CONTROL: SOMBRA 14 MAXMILTON</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050508;
+      --bg-card: rgba(13, 13, 23, 0.45);
+      --accent: #00FF88;
+      --accent-glow: rgba(0, 255, 136, 0.35);
+      --violet: #a855f7;
+      --violet-glow: rgba(168, 85, 247, 0.35);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-glow: rgba(0, 255, 136, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(0, 255, 136, 0.05) 0px, transparent 50%);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    .logo-container {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    .logo-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      background: var(--violet-glow);
+      filter: blur(25px);
+      border-radius: 50%;
+      z-index: 1;
+    }
+
+    .logo-emoji {
+      font-size: 3rem;
+      position: relative;
+      z-index: 2;
+      animation: pulse 3s infinite ease-in-out;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ffffff 30%, #a855f7 70%, #00ff88 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(168, 85, 247, 0.2);
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-weight: 300;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .glass-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .glass-panel:hover {
+      border-color: rgba(168, 85, 247, 0.2);
+      box-shadow: 0 20px 50px rgba(168, 85, 247, 0.05);
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      alignItems: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      color: #fff;
+    }
+
+    .panel-title span {
+      color: var(--violet);
+    }
+
+    /* Checklist */
+    .checklist-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .checklist-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(0, 255, 136, 0.2);
+    }
+
+    .checklist-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      margin-top: 2px;
+    }
+
+    .checklist-item input[type="checkbox"]:checked {
+      background-color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .checklist-item input[type="checkbox"]:checked::after {
+      content: '✓';
+      color: #050508;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .checklist-label {
+      font-size: 0.9rem;
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    .checklist-item input[type="checkbox"]:checked + .checklist-label {
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    .checklist-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: block;
+    }
+
+    /* Actions & Buttons */
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      text-align: center;
+      border: none;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .btn-violet {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+    }
+
+    .btn-violet:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(168, 85, 247, 0.45);
+    }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #00ff88, #059669);
+      color: #050805;
+      box-shadow: 0 4px 15px rgba(0, 255, 136, 0.25);
+    }
+
+    .btn-emerald:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+    }
+
+    /* Text block and copy */
+    .copy-block {
+      margin-top: 25px;
+      position: relative;
+    }
+
+    .block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .block-title {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent);
+      color: #050508;
+      border-color: var(--accent);
+    }
+
+    textarea.code-area {
+      width: 100%;
+      height: 120px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      color: #00ff88;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.code-area:focus {
+      border-color: rgba(0, 255, 136, 0.3);
+    }
+
+    /* Hash Card */
+    .hash-card {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.04), rgba(0, 0, 0, 0.6));
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(168, 85, 247, 0.05);
+      animation: pulse-border 4s infinite ease-in-out;
+    }
+
+    .hash-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .hash-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px dashed rgba(0, 255, 136, 0.2);
+      word-break: break-all;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-4px) scale(1.05); }
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(168, 85, 247, 0.2); }
+      50% { border-color: rgba(0, 255, 136, 0.3); }
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(5, 5, 8, 0.95);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 10px 30px var(--accent-glow);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 9999;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-container">
+      <div class="logo-glow"></div>
+      <div class="logo-emoji">🌑</div>
+    </div>
+    <h1>Sombra 14 MaxMilton</h1>
+    <div class="subtitle">Panel de Control & Protocolo de Registro de Propiedad Intelectual de Software</div>
+  </header>
+
+  <!-- Hash de Depósito Criptográfico Principal -->
+  <div class="hash-card">
+    <span class="hash-label">🔒 HUILLA DIGITAL ACTIVA SHA-256 (INMUTABLE)</span>
+    <span class="hash-value" id="hashDisplay">CARGANDO...</span>
+    <button class="action-btn btn-emerald" onclick="copyTextById('hashDisplay', '¡Hash copiado al portapapeles!')" style="padding: 8px 20px; font-size: 0.8rem; margin: 0 auto; display: inline-flex;">
+      📋 Copiar Hash SHA-256
+    </button>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Panel Izquierdo: Trámites e Inserción de Datos -->
+    <div class="glass-panel">
+      <div class="panel-title">
+        <span>📁</span> 1. Plataformas y Acciones Administrativas
+      </div>
+      
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">
+        Haciendo clic en los botones del portal del gobierno o registradores, se abrirán las páginas oficiales de login en nuevas pestañas. Copia los borradores técnicos del panel de la derecha según la plataforma.
+      </p>
+
+      <div class="button-group">
+        <a href="https://nic.ar" target="_blank" class="action-btn btn-violet">
+          🇦🇷 Registrar Dominio (.com.ar)
+        </a>
+        <a href="https://tramitesadistancia.gob.ar" target="_blank" class="action-btn btn-violet">
+          🫙 Trámites a Distancia (TAD) - DNDA
+        </a>
+        <a href="https://portaldetramites.inpi.gob.ar" target="_blank" class="action-btn btn-violet">
+          🏷️ Portal de Marcas INPI
+        </a>
+        <a href="https://dash.cloudflare.com" target="_blank" class="action-btn btn-violet">
+          🌐 Registrar Dominio (.com)
+        </a>
+        <a href="https://admin.google.com" target="_blank" class="action-btn btn-violet">
+          📧 Google Workspace Admin
+        </a>
+      </div>
+
+      <!-- Checklist de Avance Local -->
+      <div class="panel-title" style="margin-top: 40px;">
+        <span>✓</span> 2. Checklist de tu Custodia de Marca & Software
+      </div>
+
+      <div class="checklist-container">
+        <label class="checklist-item">
+          <input type="checkbox" id="chkLicense" checked>
+          <div>
+            <span class="checklist-label">Licencia Comercial en Raíz (LICENSE)</span>
+            <span class="checklist-desc">El repositorio físico del código está sellado con derechos reservados a Jon Braian Castro Maldonado.</span>
+          </div>
+        </label>
+
+        <label class="checklist-item">
+          <input type="checkbox" id="chkPack" checked>
+          <div>
+            <span class="checklist-label">Firma Criptográfica SHA-256</span>
+            <span class="checklist-desc">ZIP compilado y Hash generado exitosamente con el script 'legal:pack'.</span>
+          </div>
+        </label>
+
+        <label class="checklist-item">
+          <input type="checkbox" id="chkDnda">
+          <div>
+            <span class="checklist-label">Inscripción Obra Inédita (DNDA) en TAD</span>
+            <span class="checklist-desc">Subir el archivo 'codigo_fuente_dpv_pro.zip' y copiar la memoria descriptiva en la plataforma TAD.</span>
+          </div>
+        </label>
+
+        <label class="checklist-item">
+          <input type="checkbox" id="chkInpi">
+          <div>
+            <span class="checklist-label">Presentar Registro de Marca en INPI</span>
+            <span class="checklist-desc">Solicitar nombre y logo para las clases de precisión: 9, 41 y 42 en el INPI.</span>
+          </div>
+        </label>
+
+        <label class="checklist-item">
+          <input type="checkbox" id="chkNic">
+          <div>
+            <span class="checklist-label">Comprar Dominio dpv-pro.com.ar en NIC Argentina</span>
+            <span class="checklist-desc">Asegurar la dirección nacional del simulador en TAD pagando la tasa oficial.</span>
+          </div>
+        </label>
+
+        <label class="checklist-item">
+          <input type="checkbox" id="chkCf">
+          <div>
+            <span class="checklist-label">Comprar Dominio dpv-pro.com en Cloudflare</span>
+            <span class="checklist-desc">Asegurar dominio global, activar privacidad WHOIS gratuita y bloqueo de transferencia.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Panel Derecho: Copiado de Datos del Protocolo -->
+    <div class="glass-panel">
+      <div class="panel-title">
+        <span>📋</span> 3. Borradores Técnicos
+      </div>
+      
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">
+        Copia estos textos optimizados en un clic para pegarlos en los formularios gubernamentales y evitar oposiciones.
+      </p>
+
+      <!-- Borrador 1: DDJJ DNDA -->
+      <div class="copy-block">
+        <div class="block-header">
+          <span class="block-title">Memorándum DDJJ Técnica (DNDA - TAD)</span>
+          <button class="copy-btn" onclick="copyTextById('txtDndaText', '¡Declaración DNDA copiada!')">Copiar</button>
+        </div>
+        <textarea id="txtDndaText" class="code-area" readonly>DPV-PRO es un software de simulación termodinámica y cálculo agronómico desarrollado en arquitectura web modular (React.js, JavaScript, CSS). Su motor algorítmico computa dinámicamente la correlación de Magnus-Tetens para deducir el Vapor Deficit (VPD), Punto de Rocío y asimilación estomática foliar en cultivos de canopia cerrada, integrando un simulador lúdico multijugador ("Desafío del Cultivador") con avatares evolutivos dinámicos de planta de 10 etapas en formato vectorial SVG.</textarea>
+      </div>
+
+      <!-- Borrador 2: INPI Clase 9 -->
+      <div class="copy-block">
+        <div class="block-header">
+          <span class="block-title">Nomenclador INPI Clase 9 (Software)</span>
+          <button class="copy-btn" onclick="copyTextById('txtInpi9', '¡Clase 9 copiada!')">Copiar</button>
+        </div>
+        <textarea id="txtInpi9" class="code-area" readonly>Software de simulación, calculadoras digitales, aplicaciones móviles y programas informáticos de control climático y análisis de datos físicos aplicados a la agronomía y horticultura.</textarea>
+      </div>
+
+      <!-- Borrador 3: INPI Clase 41 -->
+      <div class="copy-block">
+        <div class="block-header">
+          <span class="block-title">Nomenclador INPI Clase 41 (Academia/Juego)</span>
+          <button class="copy-btn" onclick="copyTextById('txtInpi41', '¡Clase 41 copiada!')">Copiar</button>
+        </div>
+        <textarea id="txtInpi41" class="code-area" readonly>Servicios de educación y capacitación agronómica en línea; organización de seminarios y cursos sobre climatología vegetal; servicios de entretenimiento interactivo y juegos lúdico-educativos digitales.</textarea>
+      </div>
+
+      <!-- Borrador 4: INPI Clase 42 -->
+      <div class="copy-block">
+        <div class="block-header">
+          <span class="block-title">Nomenclador INPI Clase 42 (SaaS Cloud)</span>
+          <button class="copy-btn" onclick="copyTextById('txtInpi42', '¡Clase 42 copiada!')">Copiar</button>
+        </div>
+        <textarea id="txtInpi42" class="code-area" readonly>Servicios de computación en la nube (SaaS - Software como Servicio); consultoría tecnológica aplicada al diseño climático y optimización fotosintética de cultivos cerrados.</textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">¡Texto copiado al portapapeles!</div>
+
+<!-- Cargar el script que contiene la huella SHA-256 dinámica generada por legal:pack -->
+<script src="hash.js"></script>
+<script>
+  // Cargar dinámicamente el Hash y la fecha si el archivo existe
+  document.addEventListener("DOMContentLoaded", () => {
+    const hashEl = document.getElementById("hashDisplay");
+    if (window.CURRENT_HASH) {
+      hashEl.textContent = window.CURRENT_HASH;
+      if (window.LAST_UPDATE) {
+        console.log("Sombra 14 MaxMilton cargó el hash con fecha del " + window.LAST_UPDATE);
+      }
+    } else {
+      hashEl.textContent = "D717528A0F07E150C3615D185E3778E704FBB0B3E7DEB7F6542FA91725C49150";
+    }
+
+    // Cargar checkboxes desde localStorage local por comodidad del cultivador
+    const chks = ['chkDnda', 'chkInpi', 'chkNic', 'chkCf'];
+    chks.forEach(id => {
+      const val = localStorage.getItem(id);
+      if (val !== null) {
+        document.getElementById(id).checked = val === 'true';
+      }
+      document.getElementById(id).addEventListener('change', (e) => {
+        localStorage.setItem(id, e.target.checked);
+      });
+    });
+  });
+
+  // Función genérica para copiar al portapapeles
+  function copyTextById(id, message) {
+    const el = document.getElementById(id);
+    let text = "";
+    if (el.tagName === "TEXTAREA") {
+      text = el.value;
+    } else {
+      text = el.textContent || el.innerText;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(message);
+    }).catch(err => {
+      console.error("Fallo al copiar con API Clipboard:", err);
+      // Fallback
+      el.select && el.select();
+      document.execCommand("copy");
+      showToast(message);
+    });
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.add("show");
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2500);
+  }
+</script>
+
+</body>
+</html>

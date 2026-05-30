@@ -1,0 +1,478 @@
+/* ==========================================================================
+   JUEGOVIEW.CSS - "Desafío del Cultivador" Style Sheet
+   Premium Dark Glassmorphism, Responsive CSS Grid & Micro-animations
+   ========================================================================== */
+
+/* 1. CONTENEDOR PRINCIPAL Y MAQUETACIÓN GENERAL */
+.game-wrapper {
+  background: linear-gradient(135deg, #090e0b 0%, #030504 100%);
+  min-height: 100vh;
+  color: #ffffff;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 20px;
+  gap: 20px;
+}
+
+/* Cabecera superior */
+.game-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.back-to-app-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-to-app-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(-2px);
+}
+
+.game-status-indicator {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* 2. PANTALLA DE CONFIGURACIÓN (SETUP) Y DADOS INICIALES */
+.setup-container {
+  max-width: 550px;
+  width: 100%;
+  margin: 40px auto;
+  border-radius: 20px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  animation: modalFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.game-input {
+  transition: all 0.3s ease;
+}
+
+.game-input:focus {
+  color: #fff !important;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+.die-box {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  border: 2px solid var(--color, #fff);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  box-shadow: 0 0 10px var(--color, rgba(255, 255, 255, 0.1));
+  font-family: monospace;
+}
+
+/* 3. ESTRUCTURA DEL TABLERO DE JUEGO (11x11 CSS GRID) */
+.game-board-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.board-outer-container {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  padding: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  aspect-ratio: 1; /* Forzar proporción cuadrada */
+  max-width: 960px; /* Agrandado para una visibilidad premium de las plantas */
+  margin: 0 auto;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Estilo individual de las casillas */
+.board-casilla {
+  background: rgba(5, 8, 6, 0.7);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 5;
+}
+
+.board-casilla:hover {
+  transform: scale(1.03);
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Casillas Especiales (Bonos y Prendas) */
+.board-casilla.special-bonus {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 0, 0, 0.7));
+  border: 1px solid rgba(0, 255, 136, 0.35) !important;
+  animation: pulseGreenBorder 3s infinite ease-in-out;
+}
+
+.board-casilla.special-penalty {
+  background: linear-gradient(135deg, rgba(255, 77, 77, 0.08), rgba(0, 0, 0, 0.7));
+  border: 1px solid rgba(255, 77, 77, 0.35) !important;
+  animation: pulseRedBorder 3s infinite ease-in-out;
+}
+
+.board-casilla.special-lose_turn {
+  background: linear-gradient(135deg, rgba(255, 214, 0, 0.08), rgba(0, 0, 0, 0.7));
+  border: 1px solid rgba(255, 214, 0, 0.35) !important;
+  animation: pulseYellowBorder 3s infinite ease-in-out;
+}
+
+@keyframes pulseGreenBorder {
+  0%, 100% { border-color: rgba(0, 255, 136, 0.35); box-shadow: inset 0 0 10px rgba(0, 255, 136, 0.1); }
+  50% { border-color: rgba(0, 255, 136, 0.7); box-shadow: inset 0 0 18px rgba(0, 255, 136, 0.3), 0 0 12px rgba(0, 255, 136, 0.15); }
+}
+
+@keyframes pulseRedBorder {
+  0%, 100% { border-color: rgba(255, 77, 77, 0.35); box-shadow: inset 0 0 10px rgba(255, 77, 77, 0.1); }
+  50% { border-color: rgba(255, 77, 77, 0.7); box-shadow: inset 0 0 18px rgba(255, 77, 77, 0.3), 0 0 12px rgba(255, 77, 77, 0.15); }
+}
+
+@keyframes pulseYellowBorder {
+  0%, 100% { border-color: rgba(255, 214, 0, 0.35); box-shadow: inset 0 0 10px rgba(255, 214, 0, 0.1); }
+  50% { border-color: rgba(255, 214, 0, 0.7); box-shadow: inset 0 0 18px rgba(255, 214, 0, 0.3), 0 0 12px rgba(255, 214, 0, 0.15); }
+}
+
+/* 4. MULTIPLAYER CUADRÍCULA 2X2 ANTISOLAPAMIENTO (CRUZ INVISIBLE) */
+.cruz-invisible-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  padding: 1px;
+}
+
+.cuadrante {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.peon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1.5px solid var(--color, #fff);
+  box-shadow: 0 0 12px var(--color, rgba(255, 255, 255, 0.4));
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: scale(0.95);
+  animation: peonBounce 1.5s infinite alternate ease-in-out;
+}
+
+.peon-container:hover {
+  transform: scale(1.15);
+  z-index: 10;
+  box-shadow: 0 0 20px var(--color, rgba(255, 255, 255, 0.8));
+}
+
+@keyframes peonBounce {
+  0% { transform: translateY(0) scale(0.95); }
+  100% { transform: translateY(-3px) scale(1); }
+}
+
+/* 5. ÁREA CENTRAL DEL TABLERO */
+.board-center-area {
+  grid-column: 2 / 11;
+  grid-row: 2 / 11;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 8;
+}
+
+.center-dashboard {
+  background: rgba(10, 16, 12, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  height: 100%;
+  width: 100%;
+}
+
+/* Alertas de castigo/bono */
+.alert-banner {
+  animation: bannerAttention 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+@keyframes bannerAttention {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 6. DADO DE AVANCE (NEÓN CON GIRO 3D) */
+.die-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 3px solid var(--color, #00FF88);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.6rem;
+  box-shadow: 0 0 20px var(--color, rgba(0, 255, 136, 0.3));
+  transition: all 0.3s ease;
+  font-family: monospace;
+}
+
+.die-rolling {
+  animation: roll3D 0.5s infinite linear;
+}
+
+@keyframes roll3D {
+  0% { transform: rotate(0deg) scale(1.1); filter: hue-rotate(0deg); }
+  50% { transform: rotate(180deg) scale(0.9); }
+  100% { transform: rotate(360deg) scale(1.1); filter: hue-rotate(360deg); }
+}
+
+/* 7. SIDEBAR LATERAL DE PROGRESO Y REGISTROS */
+.game-sidebar {
+  width: 100%;
+  max-width: 960px;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr; /* Lado a lado en pantallas grandes */
+  gap: 20px;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.game-sidebar h4 {
+  letter-spacing: 0.5px;
+}
+
+/* 8. DISEÑO RESPONSIVO (TABLETAS Y SMARTPHONES) */
+@media (max-width: 1100px) {
+  .board-outer-container {
+    width: 100%;
+    max-width: 760px;
+  }
+  
+  .game-sidebar {
+    width: 100%;
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-sidebar {
+    grid-template-columns: 1fr; /* Apilado vertical en tablets y celulares */
+    max-width: 100%;
+  }
+  
+  .board-outer-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .game-wrapper {
+    padding: 10px;
+    gap: 12px;
+  }
+  
+  .game-header-top {
+    padding: 10px 14px;
+  }
+  
+  .board-outer-container {
+    padding: 6px;
+    border-radius: 12px;
+  }
+  
+  .board-grid {
+    gap: 3px;
+  }
+  
+  .board-casilla {
+    border-radius: 4px;
+    padding: 2px !important;
+  }
+  
+  .board-casilla span {
+    font-size: 0.45rem !important;
+  }
+  
+  .board-casilla div {
+    font-size: 0.35rem !important;
+  }
+  
+  .center-dashboard {
+    border-radius: 10px;
+  }
+  
+  .board-center-area {
+    padding: 6px;
+  }
+  
+  .die-display {
+    width: 38px;
+    height: 38px;
+    font-size: 1.25rem;
+    border-width: 2px;
+  }
+}
+
+/* ==========================================================================
+   NUEVOS ESTILOS Y ANIMACIONES PREMIUM PARA LAS PLANTAS EVOLUTIVAS
+   ========================================================================== */
+
+/* Balanceo natural de la planta con la brisa */
+.plant-sway {
+  transform-origin: bottom center;
+  animation: plantSway 5s infinite alternate ease-in-out;
+}
+
+@keyframes plantSway {
+  0% {
+    transform: rotate(-1.5deg) scaleX(0.98);
+  }
+  100% {
+    transform: rotate(1.5deg) scaleX(1.02);
+  }
+}
+
+/* Destello parpadeante y mágico de los tricomas resinosos */
+.shimmer-trichome {
+  animation: shimmerTrichome 2s infinite ease-in-out;
+}
+
+@keyframes shimmerTrichome {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+    filter: drop-shadow(0 0 1px #fff);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px var(--color, #00FF88));
+  }
+}
+
+/* Rotación y pulso para las estrellas de resina */
+.trichome-sparkle {
+  transform-origin: center;
+  animation: sparkleRotate 3s infinite linear;
+}
+
+@keyframes sparkleRotate {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(0.9);
+    opacity: 0.5;
+  }
+}
+
+/* Transición suave para que la planta aparezca/crezca cuando entra a una casilla */
+.pawn-avatar-svg {
+  animation: avatarGrowIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: visible !important;
+}
+
+@keyframes avatarGrowIn {
+  0% {
+    transform: scale(0) translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Asegura que los contenedores no corten los brillos (glow) perimetrales */
+.peon-container svg {
+  overflow: visible !important;
+}
+

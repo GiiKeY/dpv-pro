@@ -1,0 +1,35 @@
+==========================================================================
+CERTIFICADO DE HASH CRIPTOGRÁFICO - REGISTRO DE SOFTWARE INÉDITO (DNDA)
+Proyecto: DPV-PRO / Desafío del Cultivador
+Fecha de Emisión: 30/05/2026, 02:37:45 p. m.
+==========================================================================
+
+Por medio del presente documento se certifica la huella digital criptográfica
+del código fuente de la suite DPV-PRO y el simulador "Desafío del Cultivador",
+empaquetado y firmado de forma automática para su depósito en custodia ante la
+Dirección Nacional del Derecho de Autor (DNDA) bajo la Ley 11.723 de Propiedad Intelectual.
+
+--------------------------------------------------------------------------
+DETALLES DEL DEPÓSITO DIGITAL:
+--------------------------------------------------------------------------
+• Nombre del Archivo: codigo_fuente_dpv_pro.zip
+• Ruta Física: C:\Users\jonca\Desktop\Proyectos Antigravity\Segundo Proyecto Real\dpv-pro\legal\deposito\codigo_fuente_dpv_pro.zip
+• Tamaño de Obra: 0.17 MB (175829 bytes)
+• Algoritmo de Firma: SHA-256
+• HASH CRIPTOGRÁFICO (Huella Digital):
+  👉 672F9399EEC462BCCF98BB23F0FBFB7379C1428C658BF2433F6A499F0D3B527F 👈
+--------------------------------------------------------------------------
+
+INSTRUCCIONES PARA LA PRESENTACIÓN ANTE EL PORTAL TAD:
+1. Ingrese a la plataforma Trámites a Distancia (TAD) con Clave Fiscal.
+2. Inicie el trámite: "DNDA - Registro de Obra Inédita - Software".
+3. En el campo 'Título de la Obra', ingrese: "DPV-PRO - Software de Simulación y Climatología".
+4. En el campo 'Autor / Solicitante', ingrese sus datos personales completos.
+5. Adjunte el archivo comprimido 'codigo_fuente_dpv_pro.zip' que se encuentra en su carpeta legal.
+6. Copie e ingrese el HASH SHA-256 anterior en el campo de descripción/declaración jurada.
+7. Guarde y conserve este archivo certificado de hash firmado como su acuse legal y técnico.
+
+==========================================================================
+FIRMA DIGITAL DEL CÓDIGO - AUTOGESTIÓN LEGAL DPV-PRO
+Generado automáticamente por Antigravity AI
+==========================================================================

@@ -1,0 +1,3 @@
+// Archivo generado dinámicamente por el script legal:pack
+window.CURRENT_HASH = "672F9399EEC462BCCF98BB23F0FBFB7379C1428C658BF2433F6A499F0D3B527F";
+window.LAST_UPDATE = "30/05/2026";

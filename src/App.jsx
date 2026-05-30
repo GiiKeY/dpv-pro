@@ -29,6 +29,7 @@ import SecadoCuradoView from './components/SecadoCuradoView';
 import AcademiaView from './components/AcademiaView';
 import HerramientasProView from './components/HerramientasProView';
 import ConsoleView from './components/ConsoleView';
+import JuegoView from './components/JuegoView';
 
 const BOTANICAL_ARCHETYPES = [
   { id: 'hybrid_standard', name: 'Híbrida Estándar 🧬', type: 'hybrid', desc: 'Híbridos modernos balanceados para cultivo en interior (indoor). Poseen una tasa de transpiración estomática equilibrada y excelente estabilidad climática general.', early: [0.4, 0.8], veg: [0.8, 1.2], flower: [1.2, 1.6], stomatalDensity: 180, maxConductance: 380, sensitivity: 0.6, baseKc: 1.0 },
@@ -1053,6 +1054,10 @@ function App() {
     );
   };
 
+  if (view === 'game') {
+    return <JuegoView setView={setView} />;
+  }
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -1233,6 +1238,7 @@ function App() {
             setIsSupportModalOpen={setIsSupportModalOpen}
             renderAdSenseBanner={renderAdSenseBanner}
             adminConfig={adminConfig}
+            setView={setView}
           />
         )}
 
